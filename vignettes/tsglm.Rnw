@@ -1,0 +1,1192 @@
+%\VignetteIndexEntry{tscount: An R Package for Analysis of Count Time Series Following Generalized Linear Models}
+%\VignetteDepends{xtable}
+%\VignettePackage{tscount}
+
+\documentclass[nojss]{jss}
+\usepackage[latin9]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{mathabx}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{Sweave}
+\usepackage{setspace}
+
+%% specify the standard width of figures
+\newcommand*{\figurewidth}{0.9\textwidth}
+
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% almost as usual
+\author{Tobias Liboschik\\TU Dortmund University \And
+				Konstantinos Fokianos\\University of Cyprus\And 
+        Roland Fried\\TU Dortmund University}
+\title{\pkg{tscount}: An \proglang{R} Package for Analysis of Count Time Series Following Generalized Linear Models}
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Tobias Liboschik, Konstantinos Fokianos, Roland Fried} %% comma-separated
+\Plaintitle{tscount: An R Package for Analysis of Count Time Series Following Generalized Linear Models} %% without formatting
+\Shorttitle{\pkg{tscount}: An \proglang{R} Package for Analysis of Count Time Series Following GLMs} %% a short title (if necessary)
+
+%% an abstract and keywords
+\Abstract{The \proglang{R} package \pkg{tscount} provides likelihood-based estimation methods for analysis and modelling of count time series following generalized linear models. This is a flexible class of models which can describe serial correlation in a parsimonious way. The conditional mean of the process is linked to its past values, to past observations and to potential covariate effects. The package allows for models with the identity and with the logarithmic link function. The conditional distribution can be Poisson or Negative Binomial. An important special case of this class is the so-called INGARCH model and its log-linear extension.
+The package includes methods for model fitting and assessment, prediction and intervention analysis.
+This paper summarizes the theoretical background of these methods with references to the literature for further details. It gives details on the implementation of the package and provides simulation results for models which have not been studied theoretically before. The usage of the package is demonstrated by two data examples.
+}
+\Keywords{intervention analysis, mixed Poisson, model selection, prediction, \proglang{R}, regression model, serial correlation}
+\Plainkeywords{intervention analysis, mixed Poisson, model selection, prediction, R, regression model, serial correlation} %% without formatting
+%% at least one keyword must be supplied
+
+%% publication information
+%% NOTE: Typically, this can be left commented and will be filled out by the technical editor
+%% \Volume{50}
+%% \Issue{9}
+%% \Month{June}
+%% \Year{2012}
+%% \Submitdate{2012-06-04}
+%% \Acceptdate{2012-06-04}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+  Tobias Liboschik\\
+  Department of Statistics\\
+  TU Dortmund University\\
+  44221 Dortmund, Germany\\
+  E-mail: \email{liboschik@statistik.tu-dortmund.de}\\
+  URL: \url{http://www.statistik.tu-dortmund.de/liboschik-en.html}
+}
+%% It is also possible to add a telephone and fax number
+%% before the e-mail in the following format:
+%% Telephone: +43/512/507-7103
+%% Fax: +43/512/507-2851
+
+%% for those who use Sweave please include the following line (with % symbols):
+%% need no \usepackage{Sweave.sty}
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+\SweaveOpts{concordance=TRUE, prefix.string=tscount}
+<<preliminaries, echo=FALSE, results=hide>>=
+options(prompt="R> ", continue="+  ", width=70, useFancyQuotes=FALSE)
+library("tscount")
+@
+%% include your article here, just as usual
+%% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Recently, there has been an increasing interest in regression models for time series of counts and a quite considerable number of publications on this subject has appeared in the literature. However, most of the proposed methods are not yet available in statistical software packages and hence they cannot be applied easily. We aim at filling this gap and publish a package named \pkg{tscount} for the popular free and open source software environment \proglang{R} \citep{r_core_team_r_2014}. In fact, our main goal is to develop software for models that include a latent process similar to the case of ordinary generalized autoregressive conditional heteroscedasticity (GARCH) models \citep{bollerslev_generalized_1986}.
+
+%%Why are count data time series relevant?
+Count time series appear naturally in various areas whenever a number of events per time period is observed over time. Examples showing the wide range of applications are
+%the monthly number of cases of some disease from epidemiology,
+%the monthly number of patients recruited for a clinical trial,
+the daily number of hospital admissions from public health,
+the number of stock market transactions per minute from finance
+or the hourly number of defect items from industrial quality control.
+%or the number of photon arrivals per microsecond measured in a biological experiment.
+
+Models for count time series should take into account that the observations are nonnegative integers and they should capture suitably the dependence among observations.
+A convenient and flexible approach is to employ the generalized linear model (GLM) methodology \citep{nelder_generalized_1972} for modeling the observations conditionally on the past information, choosing a distribution suitable for count data and an appropriate link function. This approach is pursued in detail by \citet[Chapter 6]{fahrmeir_multivariate_2001} and \citet[Chapters 1--4]{kedem_regression_2002}, among others.
+
+Another important class of models for time series of counts is based on the thinning operator, like the integer autoregressive moving average (INARMA) models, which, in a way, imitate the structure of the common autoregressive moving average (ARMA) models \citep[for a recent review see][]{weis_thinning_2008}.
+Another type of count time series models are the so-called state space models. We refer to the reviews of \citet{fokianos_recent_2011}, \citet{jung_useful_2011}, \citet{fokianos_count_2012}, \citet{tjostheim_recent_2012} and \citet{fokianos_statistical_2015} for an in-depth overview of models for count time series.
+
+In the first version of the \pkg{tscount} package we provide likelihood-based methods for the framework of count time series following GLMs.
+For independent data or some simple dependence structures of low order these models can be fitted with standard software for GLMs (see Section~\ref{app:startestimation}); for example the \proglang{R} function \code{glm} produces accurate results.
+The implementations in our package \pkg{tscount} allows for a more general dependence structure which can be specified conveniently by the user. Accordingly we fit time series models which include a latent process, similarly to the GARCH class of models.
+The usage and output of our functions is inspired by the \proglang{R} functions \code{glm} and \code{arima}. We provide many standard \code{S3} methods which are known from other functions.
+The related \proglang{R} package \pkg{acp} \citep{siakoulis_acp_2014} has been published recently and provides maximum likelihood fitting of a simplified first order version of models that we consider. Our package \pkg{tscount} covers a much wider class of models and includes this model as a special case.
+
+The functionality of our package \pkg{tscount} partly goes beyond the theory available in the literature since theoretical investigation of these models is still an ongoing research theme. For instance consider the problem of accommodating covariates in such GLM-type count time series models or fitting a mixed Poisson log-linear model. These topics have not been studied theoretically. We have checked their appropriateness by simulations reported in Appendix~\ref{app:simulations}. However, some care should be taken when applying the package's programs to situations which are not covered by existing theory.
+
+This paper is organized as follows.
+At first the theoretical background of the methods included in the package is briefly summarized with references to the literature for more details. Section~\ref{sec:models} introduces the models we consider. Section~\ref{sec:inference} describes quasi maximum likelihood estimation of the unknown model parameters and gives some details regarding its implementation. Section~\ref{sec:prediction} treats prediction with such models. Section~\ref{sec:modelassessment} sums up tools for model assessment. Section~\ref{sec:interventions} discusses procedures for detection of interventions.
+Section~\ref{sec:usage} demonstrates the usage of the package with two data examples.
+Finally, Section~\ref{sec:outlook} gives an outlook on possible future extensions of the package. In the Appendix we give some additional details and confirm by simulation some of the new methods which have not yet been treated theoretically in the literature.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Models}
+\label{sec:models}
+
+Denote a count time series by $\{Y_t:t\in\mathbb{N}\}$. We will denote by $\{\boldsymbol{X}_t:t\in\mathbb{N}\}$ a time-varying $r$-dimensional covariate vector, say $\boldsymbol{X}_t=(X_{t,1},\dots,X_{t,r})^\top$. We model the conditional mean $\E\left(Y_{t}|{\cal F}_{t-1}\right)$ of the count time series by a latent mean process, say $\{\lambda_t:t\in\mathbb{N}\}$, such that $\E\left(Y_{t}|{\cal F}_{t-1}\right)=\lambda_t$.
+Denote by ${\cal F}_t$ the history of the joint process $\{Y_t,\lambda_t,\boldsymbol{X}_{t+1}:t\in\mathbb{N}\}$ up to time $t$ including the covariate information at time $t+1$.
+The distributional assumption for $Y_t$ given ${\cal F}_{t-1}$ is discussed later.
+We are interested in models of the general form
+\begin{align}
+g(\lambda_t) = \beta_0
+    + \sum_{k=1}^p \beta_k \,\widetilde{g}(Y_{t-i_k})
+    + \sum_{\ell=1}^q \alpha_{\ell} g(\lambda_{t-j_{\ell}})
+    + \boldsymbol{\eta}^\top \boldsymbol{X}_t,
+\label{eq:linpred}
+\end{align}
+where $g:\mathbb{R}^+\rightarrow\mathbb{R}$ is a link function and $\widetilde{g}:\mathbb{R}^+\rightarrow\mathbb{R}$ is a transformation function.
+The parameter vector $\boldsymbol{\eta}=(\eta_1,\dots,\eta_r)^\top$ corresponds to the effects of covariates.
+In the terminology of GLMs we call $\nu_t=g(\lambda_t)$ the linear predictor.
+To allow for regression on arbitrary past observations of the response, define a set $P=\{i_1,i_2,\dots,i_p\}$ with $p\in\mathbb{N}_0$ and integers $0<i_1<i_2\ldots<i_p<\infty$. This enables us to regress on the lagged observations $Y_{t-i_1},Y_{t-i_2},\dots,Y_{t-i_p}$. Analogously, define a set $Q=\{j_1,j_2,\dots,j_q\}$ with $q\in\mathbb{N}_0$ and integers $0<j_1<j_2\ldots<j_q<\infty$ for regression on lagged latent means $\lambda_{t-j_1},\lambda_{t-j_2},\dots,\lambda_{t-j_q}$.
+This more general case is covered by the theory for models with $P=\{1,\dots,p\}$ and $Q=\{1,\dots,q\}$, which are usually treated in the literature, by choosing $p$ and $q$ sufficiently large and setting unnecessary model parameters to zero.
+
+We give several examples of model~\eqref{eq:linpred}. Consider the situation where $g$ and $\widetilde{g}$ equal the identity, i.e., $g(x)=\widetilde{g}(x)=x$. Furthermore, let $P=\{1,\dots,p\}$, $Q=\{1,\dots,q\}$ and $\boldsymbol{\eta}=\boldsymbol{0}$. Then we obtain from \eqref{eq:linpred} that
+\begin{align}
+\lambda_t = \beta_0
+    + \sum_{k=1}^p \beta_k \,Y_{t-k}
+    + \sum_{\ell=1}^q \alpha_{\ell} \lambda_{t-{\ell}}. \label{eq:linear}
+\end{align}
+Assuming further that $Y_t$ given the past is Poisson distributed, then we obtain an \emph{integer-valued GARCH model} of order $p$ and $q$, in short INGARCH($p$,$q$). These models have been discussed by \citet{heinen_modelling_2003}, \citet{ferland_integer-valued_2006} and \citet{fokianos_poisson_2009}, among others.
+When $\boldsymbol{\eta}\neq\boldsymbol{0}$, then our package fits INGARCH models with nonnegative covariates; this is so because we need to ensure that the resulting mean process is positive. An example of an INGARCH model with covariates is given in Section~\ref{sec:interventions}, where we fit a count time series model which includes intervention effects.
+
+Consider again model~\eqref{eq:linpred} but now with the logarithmic link function $g(x)=\log(x)$, $\widetilde{g}(x)=\log(x+1)$ and $P$, $Q$ as before. Then, we obtain a \emph{log-linear model} of order $p$ and $q$ for the analysis of count time series. Indeed, set $\nu_t=\log(\lambda_t)$ to obtain from \eqref{eq:linpred} that
+\begin{align}
+\nu_t = \beta_0
+    + \sum_{k=1}^p \beta_k \,\log(Y_{t-k}+1)
+    + \sum_{\ell=1}^q \alpha_{\ell} \nu_{t-{\ell}}. \label{eq:loglin}
+\end{align}
+This log-linear model is studied by \citet{fokianos_log-linear_2011}, \citet{woodard_stationarity_2011} and \citet{douc_ergodicity_2013}. We follow \citet{fokianos_log-linear_2011} in transforming past observations by employing the function $\widetilde{g}(x)=\log(x+1)$, such that they are on the same scale as the linear predictor $\nu_t$ (see \citet{fokianos_log-linear_2011} for a discussion and for showing that the addition of a constant to each observation to avoid zeros does not affect inference).
+Note that model \eqref{eq:loglin} allows modeling of negative serial correlation, whereas \eqref{eq:linear} accommodates positive serial correlation only.
+Additionally, \eqref{eq:loglin} accommodates covariates easier than \eqref{eq:linear} since the log-linear model implies positivity of the conditional mean process $\{\lambda_t\}$. The effects of covariates on the response is multiplicative for model~\eqref{eq:loglin}; it is additive for model~\eqref{eq:linear}. For a discussion on the inclusion of time-dependent covariates see \citet[Section 4.3]{fokianos_log-linear_2011}.
+
+Model~\eqref{eq:linpred} together with the \emph{Poisson} assumption, i.e., $Y_{t}|{\cal F}_{t-1} \sim \mathrm{Poisson}(\lambda_t)$, implies that 
+\begin{align}
+\Prob\left(Y_{t}=y|{\cal F}_{t-1}\right) = \frac{\lambda_t^y\exp(-\lambda_t)}{y!}, \quad y=0,1,\dots. 
+\label{eq:poisson}
+\end{align}
+Obviously, $\VAR\left(Y_{t}|{\cal F}_{t-1}\right)=\E\left(Y_{t}|{\cal F}_{t-1}\right)=\lambda_t$. Hence in the case of a conditional Poisson response model the latent mean process is identical to the conditional variance of the observed process.
+
+The \emph{Negative Binomial} distribution allows for a conditional variance larger than $\lambda_t$. Following \citet{christou_quasi-likelihood_2014}, it is assumed that
+$Y_{t}|{\cal F}_{t-1} \sim \mathrm{NegBin}(\lambda_t,\phi)$, where the Negative Binomial distribution is parametrized in terms of its mean with an additional dispersion parameter $\phi\in(0,\infty)$, i.e.,
+\begin{align}
+\Prob\left(Y_{t}=y|{\cal F}_{t-1}\right) = \frac{\Gamma(\phi+y)}{\Gamma(y+1)\Gamma(\phi)} \left(\frac{\phi}{\phi +\lambda_t}\right)^{\phi} \left(\frac{\lambda_t}{\phi +\lambda_t}\right)^y, \quad y=0,1,\dots.
+\label{eq:nbinom} 
+\end{align}
+In this case, $\VAR\left(Y_{t}|{\cal F}_{t-1}\right)=\lambda_t+\lambda_t^2/\phi$, i.e., the conditional variance increases quadratically with $\lambda_t$. The Poisson distribution is a limiting case of the Negative Binomial when $\phi\to\infty$. 
+
+Note that the Negative Binomial distribution belongs to the class of mixed Poisson processes.
+A mixed Poisson process is specified by setting $Y_t=N_t(0,Z_t\lambda_t]$, where $\{N_t\}$ are i.i.d. Poisson processes with unit intensity and $\{Z_t\}$ are i.i.d. random variables with mean 1 and variance $\sigma^2$.
+When $\{Z_t\}$ is an i.i.d. process of Gamma random variables, then we obtain the Negative Binomial process with $\sigma^2=1/\phi$.
+We refer to $\sigma^2$ as the overdispersion coefficient because it is proportional to the extent of overdispersion of the conditional distribution. The limiting case of $\sigma^2=0$ corresponds to the Poisson distribution, i.e. no overdispersion.
+The estimation procedure we study is not confined to the Negative Binomial case but to any mixed Poisson distribution. However, the Negative Binomial assumption is required for prediction intervals and model assessment; these topics are discussed in Sections~\ref{sec:prediction} and \ref{sec:modelassessment}.
+
+In model \eqref{eq:linpred} the effect of a covariate fully enters the dynamics of the process and propagates to future observations both by the regression on past observations and by the regression on past latent means. The effect of such covariates can be seen as an internal influence on the data-generating process, which is why we refer to it as an 'internal' covariate effect. We also allow to include covariates in a way that their effect only propagates to future observations by the regression on past observations but not directly by the regression on past latent means. Following \citet{liboschik_modelling_2014}, who make this distinction for the case of intervention effects described by deterministic covariates, we refer to the effect of such covariates as an 'external' covariate effect. 
+Let $\boldsymbol{e}=(e_1,\dots,e_r)^\top$ be a vector specified by the user with $e_i=1$ if the $i$-th component of the covariate vector has an external effect and $e_i=0$ otherwise, $i=1,\dots,r$. Denote by $\text{diag}(\boldsymbol{e})$ a diagonal matrix with  diagonal elements given by $\boldsymbol{e}$.
+The generalization of \eqref{eq:linpred} allowing for both internal and external covariate effects then reads
+\begin{align}
+g(\lambda_t) = \beta_0
+    + \sum_{k=1}^p \beta_k \,\widetilde{g}(Y_{t-i_k})
+    + \sum_{\ell=1}^q \alpha_{\ell} \left( g(\lambda_{t-j_{\ell}}) - \boldsymbol{\eta}^\top \text{diag}(\boldsymbol{e}) \boldsymbol{X}_{t-j_{\ell}} \right)
+    + \boldsymbol{\eta}^\top \boldsymbol{X}_t.
+\label{eq:linpredextint}
+\end{align}
+Basically, the effect of all covariates with an external effect is subtracted in the feedback terms such that their effect does enter the dynamics of the process only via the observations. We refer to \citet{liboschik_modelling_2014} for an extensive discussion of internal versus external effects. It is our experience with these models that an empirical discrimination between internal and external covariate effects is difficult and that it is not crucial which type of covariate effect to fit in practical applications.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Estimation and inference}
+\label{sec:inference}
+
+The \pkg{tscount} package fits models of the form \eqref{eq:linpred} by quasi conditional maximum likelihood (ML) estimation (function \code{tsglm}). If the Poisson assumption holds true, then we obtain an ordinary ML estimator. However, under the mixed Poisson assumption we obtain a quasi-ML estimator.
+Denote by $\boldsymbol{\theta}=(\beta_0,\beta_1,\dots,\beta_p,\alpha_1,\dots,\alpha_q,\eta_1,\dots,\eta_r)^\top$ the vector of regression parameters.
+Regardless of the distributional assumption the parameter space for the INGARCH model~\eqref{eq:linear} with covariates is given by
+\begin{align*}
+\Theta = \Biggl\{
+{\boldsymbol{\theta}\in\mathbb{R}^{p+q+r+1}}:\ 
+{\beta_0>0,\ \beta_1,\dots,\beta_p, \alpha_1,\dots,\alpha_q, \eta_1,\dots,\eta_r \geq 0,\ 
+\sum\limits_{i=1}^p \beta_i + \sum\limits_{j=1}^q \alpha_j < 1}
+\Biggr\}.
+\end{align*}
+The intercept $\beta_0$ must be positive and all other parameters must be nonnegative to ensure positivity of the latent mean process. The other condition ensures that the fitted model has a stationary solution \citep[cf.][Proposition 1]{ferland_integer-valued_2006}.
+For the log-linear model~\eqref{eq:loglin} with covariates the parameter space is taken to be
+\begin{align*}
+\Theta = \Biggl\{
+{\boldsymbol{\theta}\in\mathbb{R}^{p+q+r+1}}:\ 
+{|\beta_1|,\dots,|\beta_p|, |\alpha_1|,\dots,|\alpha_q|<1,\ 
+\left|\sum\limits_{i=1}^p \beta_i + \sum\limits_{j=1}^q \alpha_j \right| < 1}
+\Biggr\}.
+\end{align*}
+This is intended to be the generalization (for model order $p$,$q$) of the conditions $|\beta_1|<1$, $|\alpha_1|<1$ and $|\beta_1+\alpha_1|<1$, which \citet[][Lemma 14]{douc_ergodicity_2013} derive for the first order model.
+\citet{christou_quasi-likelihood_2014} point out that with the parametrization \eqref{eq:nbinom} of the Negative Binomial distribution the estimation of the regression parameters $\boldsymbol{\theta}$ does not depend on the additional dispersion parameter $\phi$.
+This allows to employ a quasi maximum likelihood approach based on the Poisson likelihood to estimate the regression parameters $\boldsymbol{\theta}$, which is described below. The nuisance parameter $\phi$ is then estimated separately in a second step.
+
+The log-likelihood, score vector and information matrix are derived conditionally on pre-sample values of the time series and the latent mean process $\{\lambda_t\}$. An appropriate initialization is needed for their evaluation, which is discussed in the next subsection.
+For a stretch of observations $\boldsymbol{y}=(y_1,\dots,y_n)^\top$, the conditional quasi log-likelihood function,
+%$\ell:\Theta\to\mathbb{R}$
+up to a constant, is given by
+\begin{align}
+\ell(\boldsymbol{\theta})
+= \sum_{t=1}^n \log p_t(y_t;\boldsymbol{\theta})
+\propto \sum_{t=1}^n \Bigl( y_t \ln(\lambda_t(\boldsymbol{\theta}))-\lambda_t(\boldsymbol{\theta}) \Bigr),
+\label{eq:loglik}
+\end{align}
+where $p_t(y;\boldsymbol{\theta})=\Prob(Y_{t}=y|{\cal F}_{t-1})$ is the p.d.f. of a Poisson distribution as defined in \eqref{eq:poisson}.
+The latent mean process is regarded as a function $\lambda_t:\Theta\to\mathbb{R}^+$ and thus it is denoted by $\lambda_t(\boldsymbol{\theta})$ for all $t$.
+The conditional score function
+%$S_{n\tau}:\Theta\to\mathbb{R}^{p+q+2}$
+is the $(p+q+r+1)$-dimensional vector given by
+\begin{align}
+S_{n}(\boldsymbol{\theta})
+= \frac{\partial \ell(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}
+= \sum_{t=1}^n \left( \frac{y_t}{\lambda_t(\boldsymbol{\theta})} - 1 \right) \frac{\partial \lambda_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}.
+\label{eq:score} 
+\end{align}
+The vector of partial derivatives $\partial \lambda_t(\boldsymbol{\theta}) / \partial \boldsymbol{\theta}$ can be computed recursively by the recursions given in Appendix~\ref{app:recursions}.
+Finally, the conditional information matrix is given by
+\begin{align*}
+G_n(\boldsymbol{\theta}; \sigma^2)
+&= \sum_{t=1}^n \COV\left(\left.\frac{\partial \ell(\boldsymbol{\theta}; Y_t)}{\partial \boldsymbol{\theta}}\right|{\cal F}_{t-1}\right)
+%= \sum_{t=1}^n \condCov{\left( \frac{Z_t}{\lambda_t(\boldsymbol{\theta})} - 1 \right) \frac{\partial \lambda_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}}{{\cal F}_{t-1}} \notag \\
+%&= \sum_{t=1}^n \left(\frac{1}{\lambda_t(\boldsymbol{\theta})}\right)^2 \left(\frac{\partial \lambda_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}\right) \underbrace{\condCov{Z_t}{{\cal F}_{t-1}}}_{=\lambda_t(\boldsymbol{\theta})} \left(\frac{\partial \lambda_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}\right)^\top
+= \sum_{t=1}^n \biggl( \frac{1}{\lambda_t(\boldsymbol{\theta})} + \ \sigma^2 \biggr) \left(\frac{\partial \lambda_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}\right) \left(\frac{\partial \lambda_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}\right)^\top.
+%\label{eq:info}
+\end{align*}
+In the case of the Poisson assumption it holds $\sigma^2=0$ and in the case of the Negative Binomial assumption $\sigma^2=1/\phi$. For the ease of notation let $G_n^*(\boldsymbol{\theta})=G_n(\boldsymbol{\theta}; 0)$, which is the conditional information matrix in case of a Poisson distribution.
+
+The quasi maximum likelihood (QML) estimator $\hat{\boldsymbol{\theta}}_n$ of $\boldsymbol{\theta}$ is, assuming that it exists, the solution of the non-linear constrained optimization problem
+\begin{align}
+\widehat{\boldsymbol{\theta}}_n = \text{arg\,max}_{\boldsymbol{\theta} \in \Theta} \ell(\boldsymbol{\theta}).
+\label{eq:mle}
+\end{align}
+
+As proposed by \citet{christou_quasi-likelihood_2014}, the dispersion parameter $\phi$ of the Negative Binomial distribution is estimated by solving the equation
+\begin{align}
+\sum_{t=1}^n \frac{(Y_t-\widehat{\lambda}_t)^2}{\widehat{\lambda}_t(1+\widehat{\lambda}_t/\widehat{\phi})} = n-m,
+\label{eq:dispestim}
+\end{align}
+which is based on Pearson's $\chi^2$ statistic. The variance parameter $\sigma^2$ is estimated by $\widehat{\sigma}^2=1/\widehat{\phi}$.
+For the Poisson distribution we set $\widehat{\sigma}^2=0$.
+Strictly speaking, the log-linear model~\eqref{eq:loglin} does not fall into the class of models considered by \citet{christou_quasi-likelihood_2014}.
+%, because it does not fulfill the contraction property assumed in their first theorem.
+However, results obtained by \citet{douc_ergodicity_2013} allow to use this estimator also for the log-linear model (for $p=q=1$).
+This issue is addressed by simulations in Appendix~\ref{app:distrcoef}, which support that the estimator obtained by \eqref{eq:dispestim} provides good results also for models with the logarithmic link function.
+
+Inference for the regression parameters is based on the asymptotic normality of the QML estimator, which has been shown by \citet{fokianos_poisson_2009} and \citet{christou_quasi-likelihood_2014} for models without covariates. For a well behaved covariate process $\{\boldsymbol{X}_t\}$ we conjecture that
+\begin{align}
+\sqrt{n} \left(\widehat{\boldsymbol{\theta}}_n - \boldsymbol{\theta}_0\right) \stackrel{d}{\longrightarrow} N_{p+q+r+1}\left(\boldsymbol{0}, G_n^{-1}(\widehat{\boldsymbol{\theta}};\widehat{\sigma}^2) G_n^*(\widehat{\boldsymbol{\theta}}) G_n^{-1}(\widehat{\boldsymbol{\theta}};\widehat{\sigma}^2) \right),
+\label{eq:asymptoticnormality}
+\end{align}
+as $n\to\infty$, where $\boldsymbol{\theta}_0$ denotes the true parameter value and $\widehat{\sigma}^2$ is a consistent estimator of $\sigma^2$.
+%which has to be in the interior of the parameter space $\Theta$.
+We suppose that this applies under the same assumptions usually made for the ordinary linear regression model \citep[see for example][p. 140 ff.]{demidenko_mixed_2013}.
+For deterministic covariates these assumptions are $||\boldsymbol{X}_t||<c$, i.e., the covariate process is bounded, and $\lim_{n\to\infty} n^{-1}\sum_{t=1}^n \boldsymbol{X}_t \boldsymbol{X}_t^\top = A$, where $c$ is a constant and $A$ is a nonsingular matrix.
+For stochastic covariates it is assumed that the expectations $\E\left(\boldsymbol{X}_t\right)$ and $\E\left(\boldsymbol{X}_t \boldsymbol{X}_t^\top\right)$ exist and that $\E\left(\boldsymbol{X}_t \boldsymbol{X}_t^\top\right)$ is nonsingular. The assumptions imply that the information on each covariate grows linearly with the sample size and that the covariates are not linearly dependent.
+\citet[Theorem 9.1.1]{fuller_introduction_1996} shows asymptotic normality of the least squares estimator for a regression model with time series errors under even more general conditions which allow the presence of certain types of trends in the covariates.
+The asymptotic normality of the QML estimator in our context is supported by the simulations presented in Appendix~\ref{app:covariates}. A formal proof requires further research. To avoid numerical instabilities when inverting $G_n(\widehat{\boldsymbol{\theta}};\widehat{\sigma}^2)$ we apply an algorithm which makes use of the fact that it is a real symmetric and positive definite matrix; see Appendix~\ref{app:invertinfo}.
+
+An alternative to the normal approximation \eqref{eq:asymptoticnormality} for obtaining standard errors is a parametric bootstrap procedure, which is part of our package (function \code{se}). Accordingly, $B$ time series are simulated from the model fitted to the original data. The empirical standard errors of the parameter estimates for these $B$ time series are the bootstrap standard errors.
+This procedure can compute standard errors not only for the estimated regression parameters but also for the dispersion coefficient $\widehat{\sigma}^2$.
+
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\subsection*{Implementation}
+
+The parameter restrictions which are imposed by the condition $\boldsymbol{\theta}\in\Theta$ can be formulated as $d$ linear inequalities. This means that there exists a matrix $\boldsymbol{U}$ of dimension $d \times (p+q+r+1)$ and a vector $\boldsymbol{c}$ of length $d$, such that $\Theta = \{ \boldsymbol{\theta} | \boldsymbol{U} \boldsymbol{\theta} \geq \boldsymbol{c} \}$. For the linear model~\eqref{eq:linear} one needs $d=p+q+r+2$ constraints to ensure nonnegativity of the latent mean $\lambda_t$ and stationarity of the resulting process. For the log-linear model~\eqref{eq:loglin} there are neither constraints on the intercept nor on the covariate coefficients and the total number of constraints is $d=2(p+q+1)$.
+In order to enforce strict inequalities the respective constraints are tightened by an arbitrarily small constant $\xi>0$; this constant is set to $\xi=10^{-6}$ by default (argument \code{slackvar}).
+
+For solving numerically the maximization problem~\eqref{eq:mle} we employ the function \code{constrOptim}. This function applies an algorithm described by \citet[Chapter 14]{lange_numerical_1999}, which essentially enforces the constraints by adding a barrier value to the objective function and then employs an algorithm for unconstrained optimization of this new objective function, iterating these two steps if necessary. By default the quasi-Newton Broyden-Fletcher-Goldfarb-Shanno (BFGS) algorithm is employed for the latter task of unconstrained optimization, which additionally makes use of the score vector \eqref{eq:score}.
+
+Note that the log-likelihood~\eqref{eq:loglik} and the score~\eqref{eq:score} are conditional on unobserved pre-sample values. They depend on the linear predictor and its partial derivatives, which can be computed recursively using any initialization. We give the recursions and present several strategies for their initialization in Appendix~\ref{app:recursions} (arguments \code{init.method} and \code{init.drop}).
+\citet[Remark~3.1]{christou_quasi-likelihood_2014} show that the effect of the initialization vanishes asymptotically. Nevertheless, from a practical point of view the initialization of the recursions is crucial. Especially in the presence of strong serial dependence, the resulting estimates can differ substantially even for long time series with 1000 observations; see the simulated example in Table~\ref{tab:recursioninit} in Appendix~\ref{app:recursions}.
+
+Solving the non-linear optimization problem \eqref{eq:mle} requires a starting value for the parameter vector $\boldsymbol{\theta}$. This starting value can be obtained from fitting a simpler model for which an estimation procedure is readily available.
+We consider either to fit a GLM or to fit an autoregressive moving average (ARMA) model. 
+A third possibility is to fit a naive i.i.d. model without covariates.
+As a last choice, note that we could use fixed values which need to be provided by the statistician.
+All possibilities are available in our package (argument \code{start.control}).
+It turns out that the optimization algorithm converges very reliably even if the starting values are not close to the global optimum of the likelihood. Of course, a starting value closer to the global optimum usually requires fewer iterations until convergence. However, we have encountered some data examples where starting values close to a local optimum, obtained by one of the first two estimation methods, can even prevent finding the global optimum. Consequently, we recommend fitting the naive i.i.d. model without covariates to obtain starting values.
+More details on these approaches are given in Appendix~\ref{app:startestimation}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Prediction}
+\label{sec:prediction}
+
+In terms of the mean square error, the optimal predictor $\widehat{Y}_{n+1}$ for $Y_{n+1}$, given potential covariates at time $n+1$ and the past ${\cal F}_n$ of the process up to time $n$, is the conditional expectation $\lambda_{n+1}$ given in \eqref{eq:linpred}. By construction of the model the conditional distribution of $Y_{n+1}$ is a Poisson~\eqref{eq:poisson} respectively Negative Binomial~\eqref{eq:nbinom} distribution with mean $\lambda_{n+1}$.
+
+An $h$-step-ahead prediction $\widehat{Y}_{n+h}$ for $Y_{n+h}$ is obtained by recursive one-step-ahead predictions, where                                                                                                                         unobserved values $Y_{n+1},\dots,Y_{n+h-1}$ are replaced by their respective one-step-ahead prediction (S3 method of function \code{predict}), $h\in\mathbb{N}$. The distribution of this $h$-step-ahead prediction $\widehat{Y}_{n+h}$ is not known analytically but can be approximated numerically by simulation, which is described below.
+
+In applications $\lambda_{n+1}$ is substituted by its estimator $\widehat{\lambda}_{n+1}=\lambda_{n+1}(\widehat{\boldsymbol{\theta}})$, which depends on the estimated model parameters $\widehat{\boldsymbol{\theta}}$. The dispersion parameter $\phi$ of the Negative Binomial distribution is replaced by its estimator $\widehat{\phi}$. The additional uncertainty induced by plugging in the estimated model coefficients is not taken into account for the construction of prediction intervals.
+
+Prediction intervals for $Y_{n+h}$ with a given coverage rate $1-\alpha$ (argument \code{level}) are designed to cover the true observation $Y_{n+h}$ with a probability of $1-\alpha$. Simultaneous prediction intervals achieving a global coverage rate for $Y_{n+1},\dots,Y_{n+h}$ can be obtained by a Bonferroni adjustment of the individual coverage rates to $1-\alpha/h$ each. The prediction intervals are based on $B$ simulations of realizations $y_{n+1}^{(b)},\dots,y_{n+h}^{(b)}$ from the fitted model, $b=1,\dots,B$ (argument \code{B}). To obtain an approximative prediction interval for $Y_{n+h}$ one can either use the empirical $(\alpha/2)$- and $(1-\alpha/2)$-quantile of $y_{n+h}^{(1)},\dots,y_{n+h}^{(B)}$ or find the shortest interval which contains at least $\lceil (1-\alpha) \cdot B \rceil$ of these observations (the function \code{predict} returns both types of prediction intervals and additionally the empirical median of the simulated predictive distribution).
+The computation of prediction intervals can be accelerated by distributing it to multiple cores simultaneously (argument \code{parallel=TRUE}), which requires a computing cluster registered by the \proglang{R} package \pkg{parallel}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Model assessment}
+\label{sec:modelassessment}
+
+Tools originally developed for generalized linear models as well as for time series can be utilized to asses the model fit and its predictive performance.
+Within the class of count time series following generalized linear models it is desirable to asses the specification of the linear predictor as well as the choice of the link function and of the conditional distribution.
+Note that all tools are introduced as in-sample versions, meaning that the observations $y_1\dots,y_n$ are used for fitting the model as well as for assessing the obtained fit. However, it is straightforward to apply such tools as out-of-sample criteria. 
+
+Denote the fitted values by $\widehat{\lambda}_t=\lambda_t(\widehat{\theta})$. Note that these do not depend on the chosen distribution, because the mean is the same regardless of the response distribution.
+There are various types of \emph{residuals} available (S3 method of function \code{residuals}).
+Response (or raw) residuals (argument \code{type="response"}) are given by
+\begin{align*}
+r_t=y_t-\widehat{\lambda}_t,
+\end{align*}
+whereas a standardized alternative are Pearson residuals (argument \code{type="pearson"})
+\begin{align*}
+r_t^P
+=(y_t-\widehat{\lambda}_t) / \sqrt{\widehat{\lambda}_t+\widehat{\lambda}_t^2\widehat{\sigma}^2},
+%=\frac{y_t-\widehat{\lambda}_t}{\sqrt{\text{V}(\widehat{\lambda}_t)}}
+%=
+%\begin{cases}
+%(y_t-\widehat{\lambda}_t) / \sqrt{\widehat{\lambda}_t}, & \text{for Poisson distribution}\\
+%(y_t-\widehat{\lambda}_t) / \sqrt{\widehat{\lambda}_t+\widehat{\lambda}_t^2/\widehat{\phi}}, & \text{for Negative Binomial distribution}
+%\end{cases},
+\end{align*}
+or the more symmetrically distributed Anscombe residuals (argument \code{type="anscombe"})
+\begin{align*}
+r_t^A
+%=\frac{A(y_t)-A(\widehat{\lambda}_t)}{\sqrt{\text{Var}(A(\widehat{\lambda}_t))}}
+= 
+\frac{3\widehat{\sigma}^2\bigl(\bigl(1+y_t/\widehat{\sigma}^2\bigr)^{2/3} - \bigl(1+\widehat{\lambda}_t/\widehat{\sigma}^2\bigr)^{2/3}\bigr) + 3\bigl(y_t^{2/3}-\widehat{\lambda}_t^{2/3}\bigr)}{2\bigl(\widehat{\lambda}_t^2/\widehat{\sigma}^2+\widehat{\lambda}_t\bigr)^{1/6}},
+%\begin{cases}
+%\frac{3\bigl(y_t^{2/3}-\widehat{\lambda}_t^{2/3}\bigr)}{2\widehat{\lambda}_t^{1/6}}, & \text{for Poisson distribution}\\
+%\frac{3\widehat{\phi}^{-1}\bigl(\bigl(1+\widehat{\phi} y_t\bigr)^{2/3} - \bigl(1+\widehat{\phi}\widehat{\lambda}_t\bigr)^{2/3}\bigr) + 3\bigl(y_t^{2/3}-\widehat{\lambda}_t^{2/3}\bigr)}{2\bigl(\widehat{\phi}\widehat{\lambda}_t^2+\widehat{\lambda}_t\bigr)^{1/6}}, & \text{for Negative Binomial distribution}
+%\end{cases},
+\end{align*}
+for $t=1,\dots,n$ \citep[see for example][Section~5.1]{hilbe_negative_2011}. The empirical autocorrelation function of these residuals can demonstrate serial dependence which has not been explained by the fitted model. A plot of the residuals against time can reveal changes of the data generating process over time. Furthermore, a plot of squared residuals $r_t^2$ against the corresponding fitted values $\widehat{\lambda}_t$ exhibits the relation of mean and variance and might point to the Poisson distribution if the points scatter around the identity function or to the Negative Binomial distribution if there exists a quadratic relation \citep[see][]{ver_hoef_quasi-poisson_2007}. 
+
+\citet{christou_count_2015} extend tools for assessing the predictive performance to count time series, which were originally proposed by \citet{gneiting_probabilistic_2007} and others for continuous data and transferred to independent but not identically distributed count data by \citet{czado_predictive_2009}. These tools follow the \emph{prequential principle} formulated by \citet{dawid_statistical_1984}, depending only on the realized observations and their respective forecast distributions.
+Denote by $P_t(y)=P\bigl(Y_t \leq y | {\cal F}_{t-1}\bigr)$ the c.d.f., by $p_t(y)=P\bigl(Y_t = y | {\cal F}_{t-1}\bigr)$ the p.d.f., $y\in\mathbb{N}_0$, and by $\sigma_t$ the standard deviation of the predictive distribution (recall Section~\ref{sec:prediction} on one-step-ahead prediction).
+
+A tool for assessing the probabilistic calibration of the predictive distribution \citep[see][]{gneiting_probabilistic_2007} is the \emph{probability integral transform} (PIT), which will follow a uniform distribution if the predictive distribution is correct.
+For count data \citet{czado_predictive_2009} define a non-randomized PIT value for the observed value $y_t$ and the predictive distribution $P_t(y)$ by
+\begin{align*}
+F_t(u|y) =
+\begin{cases}
+0, & u \leq P_t(y-1) \\
+\dfrac{u-P_t(y-1)}{P_t(y)-P_t(y-1)}, & P_t(y-1) < u < P_t(y) \\
+1, & u \geq P_t(y)
+\end{cases}.
+\end{align*}
+The mean PIT is then given by
+\begin{align*}
+\overline{F}(u)=\frac{1}{n} \sum_{t=1}^n F_t(u|y_t), \quad 0\leq u \leq 1.
+\end{align*}
+To check whether $\overline{F}(u)$ is the c.d.f. of a uniform distribution \citet{czado_predictive_2009} propose plotting a histogram with $H$ bins, where bin $h$ has the height $f_j=\overline{F}(h/H)-\overline{F}((h-1)/H)$, $h=1,\dots,H$ (function \code{pit}).
+By default $H$ is chosen to be 10.
+%Deviations from the density of the uniform distribution on the interval $[0,1]$ can be assessed by a confidence band based on the assumption of an ideal predictive distribution.
+%%Details? This is not so easy to write down properly: For the continuous-valued case $n$ times the height of each bin has a binomial distribution and the bins are independent. In our case $nf_j$ is not necessarily an integer. But I think in principle the same should hold. I use the normal approximation with a Bonferroni correction as a confidence band, i.e., $(n/H \pm u_{1-\alpha/(2H)}\sqrt{n(1/H)(1-1/H)})/(n/H)$.
+A U-shape indicates underdispersion of the predictive distribution, whereas an upside down U-shape indicates overdispersion. \citet{gneiting_probabilistic_2007} point out that the empirical coverage of central, e.g., 90\% prediction intervals can be read off the PIT histogram as the area under the 90\% central bins.
+
+\emph{Marginal calibration} is defined as the difference of the average predictive c.d.f.\ and the empirical c.d.f.\ of the observations, i.e.,
+\begin{align*}
+\frac{1}{n}\sum_{t=1}^n P_t(y) - \frac{1}{n}\sum_{t=1}^n \mathbbm{1}(y_t \leq y)
+\end{align*}
+for all $y\in\mathbb{R}$. In practice we plot the marginal calibration for values $y$ in the range of the original observations \citep{christou_count_2015} (function \code{marcal}).
+If the predictions from a model are appropriate the marginal distribution of the predictions resembles the marginal distribution of the observations and its plotted difference is close to zero. Major deviations from zero point at model deficiencies.
+
+\citet{gneiting_probabilistic_2007} show that the calibration assessed by a PIT histogram or a marginal calibration plot is a necessary but not sufficient condition for a forecaster to be ideal. They advocate to favor the model with the maximal sharpness among all sufficiently calibrated models. Sharpness is the concentration of the predictive distribution and can be measured by the width of prediction intervals.
+A simultaneous assessment of calibration and sharpness summarized in a single numerical score can be accomplished by \emph{proper scoring rules} \citep{gneiting_probabilistic_2007}. Denote a score for the predictive distribution $P_t$ and the observation $y_t$ by $s(P_t, y_t)$. A number of possible proper scoring rules is given in Table~\ref{tab:scoring}. The mean score for each corresponding model is given by $\sum_{t=1}^n s(P_t,y_t)/n$. The model with the lowest score is preferable.
+Each of the different proper scoring rules captures different characteristics of the predictive distribution and its distance to the observed data (function \code{scoring}).
+\begin{table}[htbp]
+	\centering
+		\begin{tabular}{llc}
+			\toprule
+			\textbf{Scoring rule} & \textbf{Abbreviation} & \textbf{Definition} \\
+			\midrule
+			logarithmic score	& \code{logarithmic} & $-\log(p_t(y_t))$ \\
+			quadratic (or Brier) score & \code{quadratic} & $-2p_t(y_t) + \left\|p_t\right\|^2$ \\
+			spherical score & \code{spherical} & $-p_t(y_t)/\left\|p_t\right\|$ \\
+			ranked probability score & \code{rankprob} & $\sum_{y=0}^{\infty} (P_t(y) - \mathbbm{1}(y_t \leq y))^2$ \\
+			Dawid-Sebastiani score & \code{dawseb} & $(y_t-\lambda_t)^2/\sigma_t^2 + 2\log(\sigma_t)$ \\
+			normalized squared error score & \code{normsq} & $(y_t-\lambda_t)^2/\sigma_t^2$ \\
+			squared error score & \code{sqerror} & $(y_t-\lambda_t)^2$ \\
+			\bottomrule
+		\end{tabular}
+	\caption{Definitions of proper scoring rules $s(P_t,y_t)$ \citep[cf.][]{czado_predictive_2009,christou_count_2015} and their abbreviations in the package; $\left\|p_t\right\|^2=\sum_{y=0}^{\infty} p_t(y)^2$.}
+	\label{tab:scoring}
+\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Intervention analysis}
+\label{sec:interventions}
+
+In many applications sudden changes or extraordinary events occur. \citet{box_intervention_1975} refer to such special events as interventions. This could be for example the outbreak of an epidemic in a time series which counts the weekly number of patients infected with a particular disease. It is of interest to examine the effect of known interventions, for example to judge whether a policy change had the intended impact, or to search for unknown intervention effects and find explanations for them \emph{a posteriori}.
+
+\citet{fokianos_interventions_2010, fokianos_interventions_2012} model interventions affecting the location by including a deterministic covariate of the form $\delta^{t-\tau} \mathbbm{1}(t \geq \tau)$, where $\tau$ is the time of occurrence and $\delta$ is a known constant (function \code{interv\_covariate}). This covers various types of interventions for different choices of the constant $\delta$: a singular effect for $\delta=0$ (spiky outlier), an exponentially decaying change in location for $\delta\in(0,1)$ (transient shift) and a permanent change of location for $\delta=1$ (level shift). Similar to the case of covariates, the effect of an intervention is essentially additive for the linear model and multiplicative for the log-linear model. However, the intervention enters the dynamics of the process and hence its effect on the linear predictor is not purely additive. Our package includes methods to test on such intervention effects developed by \citet{fokianos_interventions_2010, fokianos_interventions_2012}, suitably adapted to the more general model class described in Section~\ref{sec:models}.
+The linear predictor of a model with $s$ types of interventions according to parameters $\delta_1,\dots,\delta_s$ occurring at time points $\tau_1,\dots,\tau_s$ reads
+\begin{align}
+g(\lambda_t) = \beta_0
+    + \sum_{k=1}^p \beta_k \,\widetilde{g}(Y_{t-i_k})
+    + \sum_{\ell=1}^q \alpha_{\ell} g(\lambda_{t-j_{\ell}})
+    + \boldsymbol{\eta}^\top \boldsymbol{X}_t
+		+ \sum_{m=1}^{s} \omega_{m} \delta_{m}^{t-\tau_{m}}\mathbbm{1}(t \geq \tau_{m}),
+\label{eq:intervention}
+\end{align}
+where $\omega_1,\dots,\omega_s$ are the respective intervention sizes. At the time of its occurrence an intervention of size $\omega_{\ell}$ increases the level of the time series by adding the magnitude $\omega_{\ell}$ for a linear model like \eqref{eq:linear} or by multiplying the factor $\exp(\omega_{\ell})$ for a log-linear model like \eqref{eq:loglin}. In the following paragraphs we briefly outline the proposed intervention detection procedures and refer to the original articles for details.
+
+Our package allows to test whether $s$ interventions of certain types occurring at given time points according to model~\eqref{eq:intervention} have an effect on the observed time series, i.e., to test the hypothesis $H_0: \omega_1=\ldots=\omega_s=0$ against the alternative $H_1: \omega_{\ell}\neq0$ for some $\ell\in\{1,\dots,s\}$, by employing an approximate score test (function \code{interv\_test}). Under the null hypothesis the score test statistic $T_n(\tau_1,\dots,\tau_s)$ has asymptotically a $\chi^2$-distribution with $s$ degrees of freedom, assuming some regularity conditions and for a sufficiently large sample size.
+
+For testing whether a single intervention of a certain type occurring at an unknown time point $\tau$ has an effect, the package employs the maximum of the score test statistics $T_n(\tau)$ and determines a $p$~value by a parametric bootstrap procedure (function \code{interv\_detect}). If we consider a set $D$ of time points at which the intervention might occur, e.g., $D=\{2,\dots,n\}$, this test statistic is given by $\widetilde{T}_n=\max_{\tau \in D} T_n(\tau)$.
+The bootstrap procedure can be computed on multiple cores simultaneously (argument \code{parallel=TRUE}).
+The time point of the intervention is estimated to be the value $\tau$ which maximizes this test statistic. Our empirical observation is that such an estimator usually has a large variability. It is possible to speed up the computation of the bootstrap test statistics by using the model parameters used for generation of the bootstrap samples instead of estimating them for each bootstrap sample (argument \code{final.control\_bootstrap=NULL}). This results in a conservative procedure, as noted by \citet{fokianos_interventions_2012}.
+
+If more than one intervention is suspected in the data, but neither their types nor the time points of its occurrences are known, an iterative detection procedure is used (function \code{interv\_multiple}). Consider the set of possible intervention times $D$ as before and a set of possible intervention types $\Delta$, e.g., $\Delta=\{0,0.8,1\}$.
+In a first step the time series is tested for an intervention of each type $\delta\in\Delta$ as described in the previous paragraph and the $p$~values are Bonferroni-corrected to account for the multiple testing. If none of the $p$~values is below a previously specified significance level, the procedure stops and does not identify an intervention effect. Otherwise the procedure detects an intervention of the type corresponding to the lowest $p$~value. In case of equal $p$~values preference is given to interventions with $\delta=1$, that is level shifts, and then to those with the largest test statistic. In a second step, the effect of the detected intervention is eliminated from the time series and the procedures starts a new step and continues until no further intervention effects are detected. Finally, model~\eqref{eq:intervention} with all detected intervention effects can be fitted to the data to estimate the intervention sizes and the other parameters jointly. Note that statistical inference for this final model fit has to be done with care.
+Further details are given in \citet{fokianos_interventions_2010, fokianos_interventions_2012}.
+
+\citet{liboschik_modelling_2014} study a model for external intervention effects (modeled by external covariate effects, recall \eqref{eq:linpredextint} and the related discussion) and compare it to internal intervention effects studied in the two aforementioned publications (argument \code{external}). 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Usage of the package}
+\label{sec:usage}
+
+The most recent stable version of the \pkg{tscount} package is distributed via the Comprehensive R Archive Network (CRAN). A current development version is available from the project's website \url{http://tscount.r-forge.r-project.org} on the development platform R-Forge. After installation of the package it can be loaded in \proglang{R} by typing \code{library("tscount")}.
+
+The central function for fitting a GLM for count time series is \code{tsglm}, whose help page (accessible by \code{help(tsglm)}) is a good starting point to become familiar with the usage of the package. We demonstrate typical applications of the package by two data examples.
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\subsection{Campylobacter infections in Canada}
+
+<<campy1, echo=FALSE, fig=TRUE, include=FALSE, height=3, width=7>>=
+par(mar=c(4,4,1,1), mgp=c(2.5,1,0))
+plot(campy, ylab="Number of cases", type="o")
+@
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=\figurewidth]{tscount-campy1}
+\caption{Number of campylobacterosis cases (reported every 28 days) in the north of Qu\'{e}bec in Canada.}
+\label{fig:campyplot}
+\end{figure}
+%
+We first analyze the number of campylobacterosis cases (reported every 28 days) in the north of Qu\'{e}bec in Canada shown in Figure~\ref{fig:campyplot}, which was first reported by \citet{ferland_integer-valued_2006}. These data are made available in our package by the object \code{campy}.
+We fit a model to this time series using the function \code{tsglm}.
+Following the analysis of \citet{ferland_integer-valued_2006} we fit model~\eqref{eq:linear} with the identity link function, defined by the argument \code{link}.
+For taking into account serial dependence we include a regression on the previous observation. Seasonality is captured by regressing on $\lambda_{t-13}$, the unobserved conditional mean 13 time units (which is one year) back in time. The aforementioned specification of the model for the linear predictor is assigned by the argument \code{model}, which has to be a list.
+We also include the two intervention effects detected by \citet{fokianos_interventions_2010} in the model by suitably chosen covariates provided by the argument \code{xreg}.
+We compare a fit of a Poisson with that of a Negative Binomial conditional distribution, specified by the argument \code{distr}. The call for both model fits is then given by:
+<<campy2>>=
+interventions <- interv_covariate(n=length(campy), tau=c(84, 100),
+                  delta=c(1, 0))
+campyfit_pois <- tsglm(campy, model=list(past_obs=1, past_mean=13),
+                  xreg=interventions, dist="poisson")
+campyfit_nbin <- tsglm(campy, model=list(past_obs=1, past_mean=13),
+                  xreg=interventions, dist="nbinom")
+@
+The resulting fitted models \code{campyfit_pois} and \code{campyfit_nbin} have class \code{"tsglm"}, for which a number of methods is provided (see help page), including \code{summary} for a detailed model summary and \code{plot} for diagnostic plots. 
+%
+The diagnostic plots in Figure~\ref{fig:campydiagnostic} are produced by:
+<<campy3a, fig=TRUE, include=FALSE, echo=FALSE, height=6, width=7>>=
+par(mfrow=c(2,2), mar=c(4,4,3,1), mgp=c(2.5,1,0))
+acf(residuals(campyfit_pois), main="ACF of response residuals")
+marcal(campyfit_pois, ylim=c(-0.03, 0.03), main="Marginal calibration")
+  lines(marcal(campyfit_nbin, plot=FALSE), lty="dashed")
+  legend("bottomright", legend=c("Pois", "NegBin"), lwd=1,
+         lty=c("solid", "dashed"))
+pit(campyfit_pois, ylim=c(0, 1.5), main="PIT Poisson")
+pit(campyfit_nbin, ylim=c(0, 1.5), main="PIT Negative Binomial")
+@
+<<campy3b, eval=FALSE>>=
+acf(residuals(campyfit_pois), main="ACF of response residuals")
+marcal(campyfit_pois, ylim=c(-0.03, 0.03), main="Marginal calibration")
+  lines(marcal(campyfit_nbin, plot=FALSE), lty="dashed")
+  legend("bottomright", legend=c("Pois", "NegBin"), lwd=1,
+         lty=c("solid", "dashed"))
+pit(campyfit_pois, ylim=c(0, 1.5), main="PIT Poisson")
+pit(campyfit_nbin, ylim=c(0, 1.5), main="PIT Negative Binomial")
+@
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=\figurewidth]{tscount-campy3a}
+\caption{Diagnostic plots for a fit to the campylobacterosis data.}
+\label{fig:campydiagnostic}
+\end{figure}
+%
+The response residuals are identical for the two conditional distributions. Their empirical autocorrelation function, shown in Figure~\ref{fig:campydiagnostic} top left, does not exhibit remaining serial correlation or seasonality which is not described by the models.
+The U-shape of the non-randomized PIT histogram in Figure~\ref{fig:campydiagnostic} bottom left indicates that the Poisson distribution does not fully capture this dispersion well, although the U-shape is not very pronounced. As opposed to this, the PIT histogram which corresponds to the Negative Binomial distribution appears to approach uniformity better. Hence the probabilistic calibration of the Negative Binomial model is satisfactory. The marginal calibration plot, shown in Figure~\ref{fig:campydiagnostic} top right, is inconclusive.
+As a last tool we consider the scoring rules for the two distributions:
+<<campy4>>=
+rbind(Poisson=scoring(campyfit_pois), NegBin=scoring(campyfit_nbin))
+@
+Two of the scoring rules are slightly in favor of the Poisson distribution (quadratic and spherical score), while the other scoring rules support the Negative Binomial distribution.
+Based on the the PIT histograms and the results obtained by most of the scoring rules, we decide for a Negative Binomial model. The degree of overdispersion seems to be small, as the estimated overdispersion coefficient \code{'sigmasq'} given in the output below is close to zero.
+<<campy5>>=
+summary(campyfit_nbin)
+@
+The coefficient \code{beta\_1} corresponds to regression on the previous observation, \code{alpha\_13} corresponds to regression on values of the latent mean thirteen units back in time.
+The standard errors of the estimated regression parameters in the summary above are based on the normal approximation given in \eqref{eq:asymptoticnormality}.
+For the additional overdispersion coefficient \code{sigmasq} of the Negative Binomial distribution there is no analytical approximation available for its standard error. Alternatively, standard errors of the regression parameters and the overdispersion coefficient can be obtained by a parametric bootstrap (which takes about 15 minutes computation time on a single 3.2 GHz processor for 500 replications):
+<<campy6a, echo=FALSE>>=
+load("campy.RData")
+@
+<<campy6b, eval=FALSE>>=
+se(campyfit_nbin, B=500)$se
+@
+<<campy6c, echo=FALSE>>=
+campyse$se
+warningse[length(warningse)]
+@
+Estimation problems for the dispersion parameter (see warning message) occur occasionally for models where the true overdispersion coefficient $\sigma^2$ is small, i.e., which are close to a Poisson model; see Appendix~\ref{app:distrcoef}.
+The bootstrap standard errors of the regression parameters are slightly larger than those based on the normal approximation. Note that neither of the approaches reflects the additional uncertainty induced by the model selection.
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\subsection{Road Casualties in Great Britain}
+
+Next we study the monthly number of killed drivers of light goods vehicles in Great Britain between January 1969 and December 1984 shown in Figure~\ref{fig:seatbelts1}. This time series is part of a dataset which was first considered by \citet{harvey_effects_1986} for studying the effect of compulsory wearing of seatbelts introduced on 31 January 1983. The dataset, including additional covariates, is available in \proglang{R} in the object \code{Seatbelts}. In their paper \citet{harvey_effects_1986} analyze the numbers of casualties for drivers and passengers of cars, which are so large that they can be treated with methods for continuous-valued data in good approximation. The monthly number of killed drivers of vans analyzed here is much smaller (its minimum is 2 and its maximum 17) and therefore methods for count data are to be preferred.
+%
+<<seatbelts1, echo=FALSE, fig=TRUE, include=FALSE, height=3, width=7>>=
+par(mar=c(4,4,1,1), mgp=c(2.5,1,0))
+plot(Seatbelts[, "VanKilled"], ylab="Number of casualties", type="o", xaxt="n")
+axis(side=1, at=1969:1985)
+abline(v=1983, col="darkgrey")
+@
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=\figurewidth]{tscount-seatbelts1}
+\caption{Monthly number of killed van drivers in Great Britain. The introduction of compulsory wearing of seatbelts on 31 January 1983 is marked by a vertical line.}
+\label{fig:seatbelts1}
+\end{figure}
+
+For model selection we only use the data until December 1981.
+We choose the log-linear model with the logarithmic link because it allows for negative covariate effects.
+We try to capture the short range serial dependence by a first order autoregressive term and the yearly seasonality by a 12th order autoregressive term, both declared by the list element named \code{'past_obs'} of the argument \code{model}.
+Following \citet{harvey_effects_1986} we use the real price of petrol as an explanatory variable. We also include a deterministic covariate describing a linear trend. Both covariates are provided by the argument \code{xreg}.
+Based on PIT histograms, a marginal calibration plot and the scoring rules (not shown here) we find that the Poisson distribution is sufficient for modeling.
+The model is fitted by the call:
+<<seatbelts2>>=
+timeseries <- Seatbelts[, "VanKilled"]
+regressors <- cbind(PetrolPrice=Seatbelts[, c("PetrolPrice")],
+                    linearTrend=seq(along=timeseries)/12)
+timeseries_until1981 <- window(timeseries, end=1981+11/12)
+regressors_until1981 <- window(regressors, end=1981+11/12)
+seatbeltsfit <- tsglm(ts=timeseries_until1981,
+  model=list(past_obs=c(1, 12)), link="log", distr="pois",
+  xreg=regressors_until1981)
+@
+%
+<<seatbelts3a, echo=FALSE>>=
+load("seatbelts.RData")
+@
+<<seatbelts3b, eval=FALSE>>=
+summary(seatbeltsfit, B=500)
+@
+<<seatbelts3c, echo=FALSE>>=
+seatbeltssummary
+#warningse[length(warningse)]
+@
+%(computation time is about three minutes on a single 3.2 GHz processor)
+The estimated coefficient \code{beta\_1} corresponding to the first order autocorrelation is very small and even slightly below the size of its approximative standard error, indicating that there is no notable dependence on the number of killed van drivers of the preceding week. We find a seasonal effect captured by the twelfth order autocorrelation coefficient \code{beta\_12}. Unlike in the model for the car drivers by \citet{harvey_effects_1986}, the petrol price does not seem to influence the number of killed van drivers. An explanation might be that vans are much more often used for commercial purposes than cars and that commercial traffic is less influenced by the price of fuel. The linear trend can be interpreted as a yearly reduction of the number of casualties by a factor of \Sexpr{round(exp(coef(seatbeltsfit)["linearTrend"]), 2)} (obtained by exponentiating the corresponding estimated coefficient), i.e., on average we expect \Sexpr{round((1-exp(coef(seatbeltsfit)["linearTrend"]))*100, 1)}\% fewer killed van drivers per year (which is below one in absolute numbers).
+
+Based on the model fitted to the training data until December 1981, we can predict the number of road casualties in 1982 given the respective petrol price. A graphical representation of the following predictions is given in Figure~\ref{fig:seatbeltspred}.
+<<seatbelts4>>=
+timeseries_1982 <- window(timeseries, start=1982, end=1982+11/12)
+regressors_1982 <- window(regressors, start=1982, end=1982+11/12) 
+predict(seatbeltsfit, n.ahead=12, level=1-0.1/12, B=2000,
+        newxreg=regressors_1982)$fit
+@
+%
+<<seatbelts5, echo=FALSE, fig=TRUE, include=FALSE, height=3, width=7>>=
+par(mar=c(4,4,1,1), mgp=c(2.5,1,0))
+predictions_1982 <- predict(seatbeltsfit, n.ahead=12,
+                            level=1-0.05/12, B=2000,
+                            newxreg=regressors_1982)
+plot(window(timeseries, end=1982.917), type="o",
+     xlim=c(1978.7, 1982.9), ylim=c(0, 20), ylab="Number of casualities")
+lines(fitted(seatbeltsfit), col="blue", lty="dashed", lwd=2)
+arrows(x0=time(predictions_1982$interval_shortest), y0=predictions_1982$interval_shortest[, "lower"], y1=predictions_1982$interval_shortest[, "upper"], angle=90, code=3, length=0.04, col="darkgrey", lwd=2)
+points(timeseries_1982, pch=16, type="o") 
+lines(x=c(1981.917, time(predictions_1982$fit)), c(fitted(seatbeltsfit)[156], predictions_1982$fit), col="red", lty="solid", lwd=2)
+@
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=\figurewidth]{tscount-seatbelts5}
+\caption{Fitted values (blue dashed line) and predicted values (red solid line) according to the model with the Poisson distribution. Prediction intervals (grey bars) are designed to ensure a global coverage rate of 90\%. They are chosen to have minimal length and are based on a simulation with 2000 replications.}
+\label{fig:seatbeltspred}
+\end{figure}
+
+Finally, we test whether there was an abrupt shift in the number of casualties occurring when the compulsory wearing of seatbelts is introduced on 31 January 1983. The approximative score test described in Section~\ref{sec:interventions} is applied: 
+<<seatbelts6a>>=
+seatbeltsfit_alldata <- tsglm(ts=timeseries, link="log",
+                              model=list(past_obs=c(1, 12)),
+                              xreg=regressors, distr="pois")
+@
+<<seatbelts6b, echo=FALSE>>=
+seatbelts_test <- interv_test(seatbeltsfit_alldata, tau=170,
+                              delta=1, est_interv=TRUE)
+@
+<<seatbelts6c, eval=FALSE>>=
+interv_test(seatbeltsfit_alldata, tau=170, delta=1, est_interv=TRUE)
+@
+<<seatbelts6d, echo=FALSE>>=
+seatbelts_test
+@
+The null hypothesis of no intervention is rejected at a 5\% significance level. The multiplicative effect size of the intervention is found to be \Sexpr{round(exp(coef(seatbelts_test$fit_interv)["interv_1"]), 3)}. This indicates that according to this model fit \Sexpr{round((1-exp(coef(seatbelts_test$fit_interv)["interv_1"]))*100, 1)}\% less van drivers are killed after the law enforcement. For comparison, \citet{harvey_effects_1986} estimate a reduction of 18\% for the number of killed car drivers.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Outlook}
+\label{sec:outlook}
+
+In its current version the \proglang{R} package \code{tscount} allows the analysis of count time series with a quite broad class of models. It will hopefully proof to be useful for a wide range of applications. Nevertheless, there is a number of desirable extensions of the package which could be included in future releases. We invite other researchers and developers to contribute to this package.
+
+As an alternative to the Negative Binomial distribution, one could consider the so-called Quasi-Poisson distribution. It allows for a conditional variance of $\phi\lambda_t$ (instead of $\lambda_t+\phi\lambda_t^2$, as for the Negative Binomial distribution), which is linearly and not quadratically increasing in the conditional mean $\lambda_t$ \citep[for the case of independent data see][]{ver_hoef_quasi-poisson_2007}. A scatterplot of the squared residuals against the fitted values could reveal whether a linear relation between conditional mean and variance is more
+adequate for a given time series.
+
+The common regression models for count data are often not capable to describe an exceptionally large number of observations with the value zero. In the literature so-called zero-inflated and hurdle regression models have become popular for zero excess count data \citep[for an introduction and comparison see][]{loeys_analysis_2012}. A first attempt to utilize zero-inflation for INGARCH time series models is made by \citet{zhu_zero-inflated_2012}.
+
+Alternative nonlinear models are for example the threshold model suggested by \citet{douc_ergodicity_2013} or the examples given by \citet{fokianos_nonlinear_2012}. \citet{fokianos_goodness--fit_2013} propose a class of goodness-of-fit tests for the specification of the linear predictor, which are based on the smoothed empirical process of Pearson residuals. \citet{christou_estimation_2013} develop suitably adjusted score tests for parameters which are identifiable as well as non-identifiable under the null hypothesis. These tests can be employed to test for linearity of an assumed model.
+
+In practical applications one is often faced with outliers. \citet{elsaied_robust_2014} and \citet{kitromilidou_robust_2013} develop M-estimators for the linear and the log-linear model respectively.
+\citet{fried_outliers_2014} compare robust estimators of the (partial) autocorrelation for time series of counts, which can be useful for identifying the correct model order.
+
+In the long term, related models for binary or categorical time series \citep{moysiadis_binary_2014} or potential multivariate extensions of count time series following GLMs could be included as well.
+
+The models which are so far included in the package or mentioned above fall into the class of time series following GLMs. There is also quite a lot of literature on thinning-based time series models but we are not aware of any publicly available software implementations. To name just a few of many publications, \citet{weis_thinning_2008} reviews univariate time series models based on the thinning operation, \citet{pedeli_composite_2013} study a multivariate extension and \citet{scotto_bivariate_2014} consider models for time series with a finite range of counts.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgements}
+
+Part of this work was done while K.~Fokianos was a Gambrinus Fellow at TU Dortmund University.
+The research of R.~Fried and T.~Liboschik was supported by the German Research Foundation (DFG, SFB~823 ``Statistical modelling of nonlinear dynamic processes'').
+The authors thank Philipp Probst for his considerable contribution to the development of the package and Jonathan Rathjens for carefully checking the package.
+
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{bibliography}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\appendix
+
+\section{Implementation details}
+
+\subsection{Recursions for inference and their initialization}
+\label{app:recursions}
+
+Let $h:\mathbb{R}^+\rightarrow\mathbb{R}$ be the inverse of the link function $g$ and let $h'(x)=\partial h(x) / \partial x$ be its derivative.
+In the case of the identity link $g(x)=x$ it holds $h(x)=x$ and $h'(x)=1$ and in the case of the logarithmic link $g(x)=\log(x)$ it holds $h(x)=h'(x)=\exp(x)$.
+The partial derivative of the latent mean $\lambda_t(\boldsymbol{\theta})$ is given by
+\begin{align*}
+\frac{\partial \lambda_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}}
+= h'\left(\nu_t(\boldsymbol{\theta})\right) \frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}},
+\end{align*}
+where the vector of partial derivatives of the linear predictor $\nu_t(\boldsymbol{\theta})$,
+\begin{align*}
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}} = \left(
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \beta_0},
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \beta_1},
+\dots,
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \beta_p},
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \alpha_1},
+\dots,
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \alpha_q},
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \eta_1},
+\dots,
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \eta_r}
+\right)^\top,
+\end{align*}
+can be computed recursively.
+The recursions are given by
+\begin{align*}
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \beta_0} &= 1 + \sum_{\ell=1}^q \alpha_{\ell} \frac{\partial \nu_{t-j_{\ell}}(\boldsymbol{\theta})}{\partial \beta_0}, \\
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \beta_s} &= \widetilde{g}(Y_{t-i_s}) + \sum_{\ell=1}^q \alpha_{\ell} \frac{\partial \nu_{t-j_{\ell}}(\boldsymbol{\theta})}{\partial \beta_s}, \quad s=1,\dots,p, \\
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \alpha_s} &= \sum_{\ell=1}^q \alpha_{\ell} \frac{\partial \nu_{t-j_{\ell}}(\boldsymbol{\theta})}{\partial \alpha_s} + \nu_{t-j_s}(\boldsymbol{\theta}), \quad s=1,\dots,q, \\
+\frac{\partial \nu_t(\boldsymbol{\theta})}{\partial \eta_s} &= \sum_{\ell=1}^q \alpha_{\ell} \frac{\partial \nu_{t-j_{\ell}}(\boldsymbol{\theta})}{\partial \eta_s} + X_{t,s}, \quad s=1,\dots,r.
+\end{align*}
+
+The recursions for the linear predictor $\nu_t=g(\lambda_t)$ and its partial derivatives depend on past values of the linear predictor and of its derivatives, which are generally not observable. We implemented three possibilities for initialization of these values.
+The default and preferable choice is to initialize by the respective marginal expectations, assuming a model without covariate effects, such that the process is stationary (argument \code{init.method="marginal"}). For the linear model \eqref{eq:linear} it holds \citep{ferland_integer-valued_2006}
+\begin{align}
+\E(Y_t) = \E(\nu_t) = \frac{\beta_0}{1-\sum_{k=1}^p\beta_k-\sum_{\ell=1}^q\alpha_{\ell}} =: \mu(\boldsymbol{\theta}).
+\end{align}
+For the log-linear model \eqref{eq:loglin} we instead consider the transformed time series $Z_t:=\log(Y_t+1)$, which has approximately the same second order properties as a time series from the linear model \eqref{eq:linear}. It approximately holds $\E(Z_t)=\E(\nu_t)=\mu(\boldsymbol{\theta})$.
+Specifically, we initialize past values of $\nu_t$ by $\mu(\boldsymbol{\theta})$ and past values of $\partial \nu_t(\boldsymbol{\theta}) / \partial \boldsymbol{\theta}$ by
+\begin{align*}
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \boldsymbol{\theta}} = \left(
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \beta_0},
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \beta_1},
+\dots,
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \beta_p},
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \alpha_1},
+\dots,
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \alpha_q},
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \eta_1},
+\dots,
+\frac{\partial \mu(\boldsymbol{\theta})}{\partial \eta_r}
+\right)^\top,
+\end{align*}
+which is explicitly given by
+\begin{align*}
+& \frac{\partial \mu(\boldsymbol{\theta})}{\partial \beta_0} = \frac{1}{1-\sum_{k=1}^p\beta_k-\sum_{\ell=1}^q\alpha_{\ell}}, \\
+& \frac{\partial \mu(\boldsymbol{\theta})}{\partial \beta_k} = \frac{\partial \mu(\boldsymbol{\theta})}{\partial \alpha_{\ell}} = \frac{\beta_0}{\bigl(1-\sum_{k=1}^p\beta_k-\sum_{\ell=1}^q\alpha_{\ell}\bigr)^2}, \quad k=1,\dots,p,\ \ell=1,\dots,q, \quad \text{and}\\
+& \frac{\partial \mu(\boldsymbol{\theta})}{\partial \eta_m} = 0, \quad m=1,\dots,r.
+\end{align*}
+Another possibility is to initialize $\nu_t$ by $\beta_0$ and $\partial \nu_t(\boldsymbol{\theta}) / \partial \boldsymbol{\theta}$ by zero, which corresponds to the marginal expectations assuming a model without covariate effects and without serial dependence (argument \code{init.method="iid"}).
+A third possibility would be a data-dependent initialization of $\nu_t$, for example by $\widetilde{g}(y_1)$. In this case the partial derivatives of $\nu_t$ are initialized by zero (argument \code{init.method="firstobs"}).
+
+The recursions also depend on unavailable past observations of the time series, prior to the sample which is used for the likelihood computation. The package allows to choose between two strategies to cope with that.
+The default choice is to replace these pre-sample observations by the same initializations as used for the linear predictor $\nu_t$ (see above), transformed by the inverse link function $h$ (argument \code{init.drop=FALSE}).
+An alternative is to use the first $i_p$ observations for initialization and to compute the log-likelihood on the remaining observations $y_{i_p+1},\dots,y_n$ (argument \code{init.drop=TRUE}). Recall that $i_p$ is the highest order for regression on past observations.
+
+The different methods for initialization can affect the estimation substantially even for quite long time series with 1000 observations, particularly in the presence of strong serial dependence. We illustrate this by the simulated example presented in Table~\ref{tab:recursioninit}.
+
+<<recursioninit, echo=FALSE, results=tex>>=
+set.seed(1246)
+timser <- tsglm.sim(n=1000, param=list(intercept=0.5, past_obs=0.77, past_mean=0.22), model=list(past_obs=1, past_mean=1), link="identity")$ts
+fit_iid <- tsglm(ts=timser, model=list(past_obs=1, past_mean=1), link="identity", distr="poisson", init.method="iid", init.drop=FALSE)
+fit_marginal <- tsglm(ts=timser, model=list(past_obs=1, past_mean=1), link="identity", distr="poisson", init.method="marginal", init.drop=FALSE)
+fit_firstobs <- tsglm(ts=timser, model=list(past_obs=1, past_mean=1), link="identity", distr="poisson", init.method="firstobs", init.drop=FALSE)
+fit_iid.drop <- tsglm(ts=timser, model=list(past_obs=1, past_mean=1), link="identity", distr="poisson", init.method="iid", init.drop=TRUE)
+fit_marginal.drop <- tsglm(ts=timser, model=list(past_obs=1, past_mean=1), link="identity", distr="poisson", init.method="marginal", init.drop=TRUE)
+fit_firstobs.drop <- tsglm(ts=timser, model=list(past_obs=1, past_mean=1), link="identity", distr="poisson", init.method="firstobs", init.drop=TRUE)
+comparison <- rbind(
+  c(fit_marginal$coefficients, fit_marginal$logLik),
+  c(fit_marginal.drop$coefficients, fit_marginal.drop$logLik),
+  c(fit_iid$coefficients, fit_iid$logLik),
+  c(fit_iid.drop$coefficients, fit_iid.drop$logLik),
+  c(fit_firstobs$coefficients, fit_firstobs$logLik),
+  c(fit_firstobs.drop$coefficients, fit_firstobs.drop$logLik)
+)
+colnames(comparison) <- c("$\\widehat{\\beta}_0$", "$\\widehat{\\beta}_1$", "$\\widehat{\\alpha}_1$", "$\\ell(\\widehat{\\boldsymbol{\\theta}})$")
+rownames(comparison) <- c("\\texttt{init.method=\"marginal\", init.drop=FALSE}", "\\texttt{init.method=\"marginal\", init.drop=TRUE}", "\\texttt{init.method=\"iid\", \\hspace{2em} init.drop=FALSE}", "\\texttt{init.method=\"iid\", \\hspace{2em} init.drop=TRUE}", "\\texttt{init.method=\"firstobs\", init.drop=FALSE}", "\\texttt{init.method=\"firstobs\", init.drop=TRUE}")
+
+library("xtable")
+print(xtable(comparison, caption="Estimated parameters and log-likelihood of a time series of length 1000 simulated from model \\eqref{eq:linear} for different initialization strategies. The true parameters are $\\beta_0=0.5$, $\\beta_1=0.77$ and $\\alpha_1=0.22$.", label="tab:recursioninit", align="lcccc", digits=c(0,3,3,3,1)), table.placement="tbp", caption.placement="bottom", booktabs=TRUE, comment=FALSE, sanitize.text.function=function(x){x})
+@
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\subsection{Starting value for optimization}
+\label{app:startestimation}
+
+The numerical optimization of the log-likelihood function requires a starting value for the parameter vector $\boldsymbol{\theta}$. This starting value can be obtained by initial estimation based on a simpler model than the one of interest. Different strategies for this (controlled by the argument \code{start.control}) are discussed in this section. We call this start estimation (and not initial estimation) to avoid confusion with the initialization of the recursions described in the previous section.
+
+The start estimation by the R function \code{glm} utilizes the fact that a time series following a GLM without feedback \citep[as in][]{kedem_regression_2002} can be fitted by employing standard software. Neglecting the feedback mechanism, the parameters of the GLM
+\begin{align*}
+& Y_{t}|{\cal F}^*_{t-1} \sim \mathrm{Poi}(\lambda_t^*),
+\ \text{with} \ \nu_t^*=g(\lambda_t^*) \ \text{and}\\
+& \nu_t^* = \beta_0^* + \beta_1^* \,\widetilde{g}(Y_{t-i_1}) + \ldots + \beta_p^* \,\widetilde{g}(Y_{t-i_p})
+    + \eta_1^* X_{t,1} + \ldots + \eta_r^* X_{t,r}, \ t=i_p+1,\dots,n,
+\end{align*}
+with ${\cal F}^*_t$ the history of the joint process $\{Y_t, \boldsymbol{X}_t\}$,
+are estimated using the \proglang{R} function \code{glm}.
+Denote the estimated parameters by $\widehat{\beta}_0^*$, $\widehat{\beta}_1^*, \dots, \widehat{\beta}_p^*$, $\widehat{\eta}_1^*, \dots, \widehat{\eta}_r^*$ and set $\widehat{\alpha}_1^*, \dots, \widehat{\alpha}_q^*$ to zero (argument \code{start.control$method="GLM"}).
+
+\citet{fokianos_poisson_2009} suggest start estimation of $\boldsymbol{\theta}$, for the first order linear model \eqref{eq:linear} without covariates, by employing its representation as an ARMA(1,1) process with identical second-order properties, see \cite{ferland_integer-valued_2006}. For arbitrary orders $P$ and $Q$ with $k:=\max(P, Q)$ and the general model from Section~\ref{sec:models} this representation, after straightforward calculations, is given by
+\begin{align}
+(\widetilde{g}(Y_t) - \underbrace{\mu(\boldsymbol{\theta})}_{=:\zeta}) - \sum_{i=1}^{k} \underbrace{(\beta_i+\alpha_i)}_{=:\varphi_i} \left(\widetilde{g}(Y_{t-i})-\mu(\boldsymbol{\theta})\right) = \varepsilon_t + \sum_{i=1}^q \underbrace{(-\alpha_i)}_{=:\psi_i} \varepsilon_{t-i},
+\label{eq:armarepr}
+\end{align}
+where $\beta_i:=0$ for $i \notin P$, $\alpha_i:=0$ for $i \notin Q$ and $\{\varepsilon_t\}$ is a white noise process. Recall that $\widetilde{g}$ is defined by $\widetilde{g}(x)=x$ for the linear model and $\widetilde{g}(x)=\log(x+1)$ for the log-linear model. Given the autoregressive parameters $\varphi_i$ and the moving average parameters $\psi_i$ of the ARMA representation of $\{Y_t\}$, the parameters of our original process are obtained by $\alpha_i=-\psi_i$ and $\beta_i=\varphi_i+\psi_i$. We get $\beta_0$ from $\beta_0=\zeta\bigl(1-\sum_{i=1}^p\beta_i-\sum_{j=1}^q\alpha_j\bigr)$ using the formula for the marginal mean of $\{Y_t\}$.
+With these formulas estimates $\widehat{\beta}_0^*$, $\widehat{\beta}_i^*$ and $\widehat{\alpha}_i^*$ are obtained from ARMA estimates $\widehat{\zeta}$, $\widehat{\varphi}_i$ and $\widehat{\psi}_i$. Estimation of the ARMA parameters can be done by conditional least squares (argument \code{start.control$method="CSS"}), maximum likelihood assuming normally distributed errors (argument \code{start.control$method="ML"}), or, for models up to first order, the method of moments (argument \code{start.control$method="MM"}).
+If covariates are included, a linear regression is fitted to $\widetilde{g}(Y_t)$, whose errors follow an ARMA model like~\eqref{eq:armarepr}. Consequently, the covariate effects do not enter the dynamics of the process, as it is the case in the actual model~\eqref{eq:linpred}. It would be preferable to fit an ARMAX model, in which covariate effects are included on the right hand side of~\eqref{eq:armarepr}, but this is currently not readily available in \proglang{R}. 
+
+We compare both approaches to obtain start estimates. The GLM approach apparently disregards the feedback mechanism, i.e., the dependence on past values of the conditional mean. As opposed to this, the ARMA approach does not treat covariate effects in an appropriate way. From extensive simulations we note that the final estimation results are almost equally good for both approaches.
+
+However, we also discovered that in some situations (in the presence of certain types of covariates) both approaches occasionally provoke the algorithm for likelihood optimization to run into a local but not the global optimum. This happens even more often for increasing sample size. To overcome this problem we recommend a naive start estimation assuming an i.i.d. model without covariates, which only estimates the intercept and sets all other parameters to zero (argument \code{start.control$method="iid"}). This starting value is usually not close to any local optimum of the likelihood function. Hence we expect possibly a larger number of steps needed for the optimization algorithm to be terminated. Nevertheless, we prefer the longer overall computation time to the risk of an improper final estimation and make this the default method in our package.
+
+Particularly for the linear model, neither of the aforementioned approaches supplies a starting value $\widehat{\boldsymbol{\theta}}^*=(\widehat{\beta}_0^*, \widehat{\beta}_1^*,\dots,\widehat{\beta}_p^*, \widehat{\alpha}_1^*,\dots,\widehat{\alpha}_q^*, \widehat{\eta}_1^*,\dots,\widehat{\eta}_r^*)^\top$ for $\boldsymbol{\theta}$, which is ensured to lay in the interior of the parameter space $\Theta$, as it is required for the applied optimization algorithm. To overcome this problem $\widehat{\boldsymbol{\theta}}^*$ is suitably transformed to be used as a starting value. For the linear model \eqref{eq:linear} this transformation is done according to the procedure described by \citet{liboschik_modelling_2014} and for the log-linear model \eqref{eq:loglin} this procedure is modified appropriately.
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\subsection{Stable inversion of the information matrix}
+\label{app:invertinfo}
+
+In order to obtain standard errors from the normal approximation \eqref{eq:asymptoticnormality} one needs to invert the information matrix $G_n(\widehat{\boldsymbol{\theta}};\widehat{\sigma}^2)$. To avoid numerical instabilities we make use of the fact that an information matrix is a real symmetric and positive definite matrix. We first compute a Choleski factorization of the information matrix. Then we apply an efficient algorithm to invert the matrix employing the upper triangular factor of the Choleski decomposition (see \proglang{R} functions \code{chol} and \code{chol2inv}). This procedure is implemented in the function \code{invertinfo} in our package.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Simulations}
+\label{app:simulations}
+
+In this section we present simulations supporting that the methods that have not yet been treated thoroughly in the literature work reliably.
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\subsection{Covariates}
+\label{app:covariates}
+
+We present some limited simulation results for the problem of including covariates. For simplicity we employ first order models with one covariate and a conditional Poisson distribution, that is, we consider the linear model with the identity link function
+\begin{align*}
+Y_t|{\cal F}_{t-1} \sim \text{Poisson}(\lambda_t), \quad
+\lambda_t = \beta_0
+    + \beta_1 \,Y_{t-1}
+    + \alpha_1 \lambda_{t-1}
+    + \eta_1 X_t,
+\quad t=1,\dots,n,
+\end{align*}
+and the log-linear model with the logarithmic link function
+\begin{align*}
+Y_t|{\cal F}_{t-1} \sim \text{Poisson}(\exp(\nu_t)), \quad
+\nu_t = \beta_0
+    + \beta_1 \,\log(Y_{t-1}+1)
+    + \alpha_1 \nu_{t-1}
+    + \eta_1 X_t,
+\quad t=1,\dots,n.
+\end{align*}
+The dependence parameters are chosen to be $\beta_1=0.3$ and $\alpha_1=0.2$. The intercept parameter is $\beta_0=4 \cdot 0.5$ for the linear and $\beta_0=\log(4) \cdot 0.5$ for the log-linear model in order to obtain a marginal mean (without the covariate effect) of about 4 in both cases.
+%
+\begin{table}
+\begin{tabular}{lp{0.7\textwidth}}
+\toprule
+\textbf{Abbreviation} & \textbf{Definition} \\
+\midrule
+Linear & $t/n$ \\
+Sine & $(\sin(2\pi \cdot 5 \cdot t/n) + 1)/2$ \\
+Spiky outlier & $\mathbbm{1}(t = \tau)$ \\
+Transient shift & $0.8^{t-\tau} \mathbbm{1}(t \geq \tau)$ \\
+Level shift & $\mathbbm{1}(t \geq \tau)$ \\
+GARCH(1,1) & $\sqrt{h_t}\varepsilon_t$ with $\varepsilon_t \sim \text{N}(0.5,1)$ and $h_t=0.002 + 0.1 X_{t-1}^2 + 0.8 h_{t-1}$\\
+Exponential & i.i.d. Exponential with mean 0.5 \\
+Normal & i.i.d. Normal with mean 0.5 and variance 0.04 \\
+\bottomrule
+\end{tabular}
+\caption{Covariates $\{X_t:t=1,\dots,n\}$ considered in the simulation study. The interventions occur at time $\tau=n/2$. The GARCH model is defined recursively \citep[see][]{bollerslev_generalized_1986}.}
+\label{tab:covariates}
+\end{table}
+%
+We consider the covariates listed in Table~\ref{tab:covariates}, covering a simple linear trend, seasonality, intervention effects, i.i.d. observations from different distributions and a stochastic process.
+The covariates are chosen to be nonnegative, which is necessary for the linear model but not for the log-linear model. All covariates have values of about 0.5, such that their effect sizes are somewhat comparable. The regression coefficient is chosen to be $\eta_1=2 \cdot \beta_0$ for the linear and $\eta_1=1.5 \cdot \beta_0$ for the log-linear model.
+
+<<covariates_load, echo=FALSE>>=
+load("covariates.RData")
+estimates_list_id <- list(covariate_n100_id, covariate_n500_id, covariate_n1000_id, covariate_n2000_id)
+estimates_list_log <- list(covariate_n100_log, covariate_n500_log, covariate_n1000_log, covariate_n2000_log)
+@
+%
+<<covariates_scatterplots, echo=FALSE>>=
+covariate_scatterplots <- function(x, main="", truevalue, show=1:12){
+  #will only show the first eight types of covariates in vector 'show'
+  par(mfrow=c(4,2), mar=c(0.25,0.25,0,0), las=1, mgp=c(1.5,0.6,0), oma=c(2.5,2.5,2.5,1))
+  #layout(matrix(c(1,3,5,7,2,4,6,8), ncol=2))
+  estimates_cov <- sapply(x$estimates[show], function(x) x[4, ])
+  estimates_dep <- sapply(x$estimates[show], function(x) x[2, ]) + sapply(x$estimates[show], function(x) x[3, ])
+  minmax_cov <- c(min(apply(estimates_cov, 2, quantile, probs=0.0055, na.rm=TRUE)), max(apply(estimates_cov, 2, quantile, probs=0.9994, na.rm=TRUE)))
+  minmax_cov[2] <- minmax_cov[2]+0.2*(diff(minmax_cov)) #enlarge range to have space for the plot title placed within the plot region
+  minmax_dep <- c(min(apply(estimates_dep, 2, quantile, probs=0.0055, na.rm=TRUE)), max(apply(estimates_dep, 2, quantile, probs=0.9994, na.rm=TRUE)))
+covariate_labels <- c("Linear", "Quadratic", "Sine", "Sine (fixed width)", "Spiky outlier", "Transient shift", "Level shift", "GARCH(1,1)", "Poisson", "Exponential", "Normal", "Chi^2")
+  for(j in seq(along=show)){
+  i <- show[j]
+  plot(estimates_dep[, j], estimates_cov[, j], main="", pch=20, xaxt="n", yaxt="n", cex=0.5, las=0, cex.axis=0.8, xlim=minmax_dep, ylim=minmax_cov)
+  abline(v=0.5, col="darkgrey")
+  abline(h=truevalue, col="darkgrey")
+  if(j %in% c(7,8)){
+    axis(side=1, cex.axis=0.8, line=0)
+    mtext(text=expression(hat(alpha)[1]+hat(beta)[1]), side=1, line=1.9, cex=0.7)
+  }
+  if(j %in% c(1,3,5,7)){
+    axis(side=2, cex.axis=0.8, line=0)
+    mtext(text=expression(hat(eta)[1]), side=2, line=1.3, cex=0.7, las=0)
+  }
+  legend("top", bty="n", legend="", title=covariate_labels[i], cex=1.3)
+  }
+  title(main=main, outer=TRUE, cex.main=1.6)
+}
+
+pdf("tscount-covariates_scatterplots.pdf", width=3.5, height=5)
+covariate_scatterplots(x=covariate_n100_id, main="Linear model", truevalue=2*2, show=c(1,3,5,6,7,8,10,11))
+covariate_scatterplots(x=covariate_n100_log, main="Log-linear model", truevalue=0.65*1.5, show=c(1,3,5,6,7,8,10,11))
+invisible(dev.off())
+@
+%
+<<covariates_boxplots, echo=FALSE>>=
+covariate_boxplots <- function(estimates_list, index, truevalue, main="", label="", show=1:12){
+  number_covariates <- length(show)
+  estimates <- cbind(
+    sapply(estimates_list[[1]]$estimates[show], function(x) x[index, ]),
+    sapply(estimates_list[[2]]$estimates[show], function(x) x[index, ]),
+    sapply(estimates_list[[3]]$estimates[show], function(x) x[index, ]),
+    sapply(estimates_list[[4]]$estimates[show], function(x) x[index, ])
+)[, rev(seq(from=1, by=number_covariates, length.out=4)+rep(1:number_covariates-1, each=4))]
+  minmax <- c(min(apply(estimates, 2, quantile, probs=0.0055, na.rm=TRUE)), max(apply(estimates, 2, quantile, probs=0.9994, na.rm=TRUE)))
+  distance <- 1
+  boxplot(estimates, horizontal=TRUE, main=main, at=c((1:4)+rep(seq(from=0, by=4+distance, length.out=number_covariates), each=4)), yaxt="n", xlab=label, ylim=minmax, cex=0.5)
+  abline(h=(1:(number_covariates-1))*4+(1:(number_covariates-1))*distance)
+  abline(v=truevalue, col="darkgrey")
+  covariate_labels <- rev(c("Linear", "Quadratic", "Sine", "Sine (fixed width)", "Spiky outlier", "Transient shift", "Level shift", "GARCH(1,1)", "Poisson", "Exponential", "Normal", "Chi^2")[show])
+  text(x=minmax[2]+diff(minmax)*0.03, y=1.5+seq(from=0, by=5, length.out=number_covariates), labels=covariate_labels, pos=2, font=1, cex=1)
+}
+
+###Look at all four parameters:
+#Linear model:
+pdf("tscount-covariates_boxplotslinear.pdf", width=7, height=7)
+par(mfrow=c(2,2), mar=c(2,0.5,2,0.5), mgp=c(2,0.5,0), cex.main=1.5)
+covariate_boxplots(estimates_list=estimates_list_id, index=1, truevalue=2, main=expression(hat(beta)[0]), show=c(1,3,5,6,7,8,10,11))
+covariate_boxplots(estimates_list=estimates_list_id, index=2, truevalue=0.3, main=expression(hat(beta)[1]), show=c(1,3,5,6,7,8,10,11))
+covariate_boxplots(estimates_list=estimates_list_id, index=3, truevalue=0.2, main=expression(hat(alpha)[1]), show=c(1,3,5,6,7,8,10,11))
+covariate_boxplots(estimates_list=estimates_list_id, index=4, truevalue=2*2, main=expression(hat(eta)[1]), show=c(1,3,5,6,7,8,10,11))
+invisible(dev.off())
+#Log-Linear model:
+pdf("tscount-covariates_boxplotsloglin.pdf", width=7, height=7)
+par(mfrow=c(2,2), mar=c(2,0.5,2,0.5), mgp=c(2,0.5,0), cex.main=1.5)
+covariate_boxplots(estimates_list=estimates_list_log, index=1, truevalue=0.65, main=expression(hat(beta)[0]), show=c(1,3,5,6,7,8,10,11))
+covariate_boxplots(estimates_list=estimates_list_log, index=2, truevalue=0.3, main=expression(hat(beta)[1]), show=c(1,3,5,6,7,8,10,11))
+covariate_boxplots(estimates_list=estimates_list_log, index=3, truevalue=0.2, main=expression(hat(alpha)[1]), show=c(1,3,5,6,7,8,10,11))
+covariate_boxplots(estimates_list=estimates_list_log, index=4, truevalue=0.65*1.5, main=expression(hat(eta)[1]), show=c(1,3,5,6,7,8,10,11))
+invisible(dev.off())
+
+###Look only at the parameter of the covariate:
+# pdf("tscount-covariates_boxplots.pdf", width=7, height=5)
+# par(mfrow=c(1,2), mar=c(3,0.5,1.8,0.5), mgp=c(2,0.5,0))
+# covariate_boxplots(estimates_list=estimates_list_id, index=4, truevalue2*2, label=expression(hat(eta)[1]), main="Linear model", show=c(1,3,5,6,7,8,10,11))
+# covariate_boxplots(estimates_list=estimates_list_log, index=4, truevalue=0.65*1.5, label=expression(hat(eta)[1]), main="Log-linear model", show=c(1,3,5,6,7,8,10,11))
+# invisible(dev.off())
+@
+%
+<<covariates_qqplots, echo=FALSE>>=
+covariate_qqplots <- function(x, main="", truevalue, show=1:12){
+  #will only show the first eight types of covariates in vector 'show'
+  par(mfrow=c(4,2), mar=c(0.25,0.25,0,0), las=1, mgp=c(1.5,0.6,0), oma=c(2.5,2.5,2.5,1))
+  #layout(matrix(c(1,3,5,7,2,4,6,8), ncol=2))
+  estimates <- sapply(x$estimates[show], function(x) x[4, ])
+  minmax <- c(min(apply(estimates, 2, quantile, probs=0.0055, na.rm=TRUE)), max(apply(estimates, 2, quantile, probs=0.9994, na.rm=TRUE)))
+covariate_labels <- c("Linear", "Quadratic", "Sine", "Sine (fixed width)", "Spiky outlier", "Transient shift", "Level shift", "GARCH(1,1)", "Poisson", "Exponential", "Normal", "Chi^2")
+  for(j in seq(along=show)){
+  i <- show[j]
+  qqnorm(estimates[, j], main="", xlab="Theoretical quantiles", ylab="Sample quantiles", pch=20, xaxt="n", yaxt="n", cex=0.5, las=0, cex.axis=0.8, ylim=minmax, xlim=c(-3.3,3.3))
+  abline(h=truevalue, col="darkgrey")
+  if(j %in% c(7,8)){
+    axis(side=1, cex.axis=0.8, line=0)
+    mtext(text="Theoretical quantiles", side=1, line=1.5, cex=0.7)
+  }
+  if(j %in% c(1,3,5,7)){
+    axis(side=2, cex.axis=0.8, line=0)
+    mtext(text="Sample quantiles", side=2, line=1.5, cex=0.7, las=0)
+  }
+  legend("top", bty="n", legend="", title=covariate_labels[i], cex=1.3)
+  qqline(estimates[, j])
+  }
+  title(main=main, outer=TRUE, cex.main=1.6)
+}
+
+pdf("tscount-covariates_qqplots.pdf", width=3.5, height=5)
+covariate_qqplots(x=covariate_n100_id, main="Linear model", truevalue=2*2, show=c(1,3,5,6,7,8,10,11))
+covariate_qqplots(x=covariate_n100_log, main="Log-linear model", truevalue=0.65*1.5, show=c(1,3,5,6,7,8,10,11))
+invisible(dev.off())
+@
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=0.45\textwidth, page=1]{tscount-covariates_scatterplots}
+\includegraphics[width=0.45\textwidth, page=2]{tscount-covariates_scatterplots}
+\caption{Scatterplots of the estimated covariate parameter against the sum of the estimated dependence parameters in a linear (left) respectively log-linear (right) model of order $p=q=1$ with an additional covariate of the given type. The time series of length 100 are simulated from the respective model with the true values marked by grey lines. Each dot represents one of 200 replications.
+} 
+\label{fig:covariates_scatterplots}
+\end{figure}
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=\figurewidth]{tscount-covariates_boxplotslinear}
+\caption{Estimated coefficients for a linear model of order $p=q=1$ with an additional covariate of the given type. The time series of length $100,500,1000,2000$ (from top top to bottom in each panel) are simulated from the respective model with the true coefficients marked by a grey vertical line. Each boxplot is based on 200 replications.
+}
+\label{fig:covariates_boxplotslinear}
+\end{figure}
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=\figurewidth]{tscount-covariates_boxplotsloglin}
+\caption{Simulation results equivalent to those shown in Figure~\ref{fig:covariates_boxplotslinear} but for a log-linear model.}
+\label{fig:covariates_boxplotsloglin}
+\end{figure}
+%
+% \begin{figure}[bt]
+% \centering
+% \includegraphics[width=\figurewidth]{tscount-covariates_boxplots}
+% \caption{Estimated coefficient $\widehat{\eta}_1$ of the covariate for a linear (left) respectively log-linear (right) model of order $p=q=1$ with an additional covariate of the given type. The time series of length $100,500,1000,2000$ (from top top to bottom in each panel) are simulated from the respective model with the true coefficient marked by a grey vertical line. Each boxplot is based on 200 replications.
+% }
+% \label{fig:covariates_boxplots}
+% \end{figure}
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=0.45\textwidth, page=1]{tscount-covariates_qqplots}
+\includegraphics[width=0.45\textwidth, page=2]{tscount-covariates_qqplots}
+\caption{Normal QQ-plots for the estimated covariate coefficient $\widehat{\eta}_1$ in a linear (left) respectively log-linear (right) model of order $p=q=1$ with an additional covariate of the given type. The time series of length 100 are simulated from the respective model with the true coefficient marked by a grey horizontal line. Each plot is based on 200 replications. 
+} 
+\label{fig:covariates_qqplots}
+\end{figure}
+%
+Apparently, certain types of covariates can to some extent be confused with serial dependence. This is the case for the linear trend and the level shift, but also for the sinusoidal term, since these lead to data patterns which resemble positive serial correlation; see Figure~\ref{fig:covariates_scatterplots}.
+
+A second finding is that the effect of covariates like a transient shift or a spiky outlier is hard to estimate precisely.
+Note that both covariates have values considerably different from zero only at very few time points (especially the spiky outlier) which explains this behavior of the estimation procedure.
+%Such covariates contain information on the covariate effect almost completely indirectly via the serial dependence, and this indirect gain of information is rather limited.
+The estimators for the coefficients of such covariates have a large variance which decreases only very slowly with growing sample size; see the bottom right plot in Figures~\ref{fig:covariates_boxplotslinear} and \ref{fig:covariates_boxplotsloglin} for the linear and the log-linear model, respectively. This does not affect the estimation of the other parameters, see the other three plots in the same figures. For all other types of covariates the variance of the estimator for the regression parameter decreases with growing sample size, which indicates consistency of the estimator.
+
+The conjectured approximative normality of the model parameters stated in \eqref{eq:asymptoticnormality} seems to hold for most of the covariates considered here even in case of a rather moderate sample size of 100, as indicated by the QQ plots shown in Figure~\ref{fig:covariates_qqplots}. The only serious deviation from normality happens for the spiky outlier in the linear model, where many estimates of the covariate coefficient $\eta_1$ lie close to zero, which is the lower boundary of the parameter space for this model. Due to the consistency problem for this covariate (discussed in the previous paragraph) the observed deviation from normality is still present even for a much larger sample size of 2000 (not shown here). Note that for the spiky outlier the conditions for asymptotic normality in linear regression models stated in Section~\ref{sec:inference} are not fulfilled.
+QQ plots for the other model parameters $\beta_0$. $\beta_1$ and $\alpha_1$ look satisfactory for all types of covariates and are not shown here.
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\subsection{Negative Binomial distribution}
+\label{app:distrcoef}
+
+As mentioned before, the model with the logarithmic link function is not covered by the theory derived by \citet{christou_quasi-likelihood_2014}. Consequently, we confirm by simulations that estimating the additional dispersion parameter $\phi$ of the Negative Binomial distribution by equation \eqref{eq:dispestim} yields good results.
+We consider both, the linear model with the identity link
+\begin{align*}
+Y_t|{\cal F}_{t-1} \sim \text{NegBin}(\lambda_t, \phi), \quad
+\lambda_t = \beta_0
+    + \beta_1 \,Y_{t-1}
+    + \alpha_1 \lambda_{t-1},
+\quad t=1,\dots,n,
+\end{align*}
+and the log-linear model with the logarithmic link
+\begin{align*}
+Y_t|{\cal F}_{t-1} \sim \text{NegBin}(\exp(\nu_t), \phi), \quad
+\nu_t = \beta_0
+    + \beta_1 \,\log(Y_{t-1}+1)
+    + \alpha_1 \nu_{t-1},
+\quad t=1,\dots,n.
+\end{align*}
+The parameters $\beta_0$, $\beta_1$ and $\alpha_1$ are chosen like in the previous section. For the dispersion parameter $\phi$ we employ the values 1, 5, 10, 20 and $\infty$, which are corresponding to overdispersion coefficients $\sigma^2$ of 1, 0.2, 0.1, 0.05 and 0, respectively.
+
+<<distrcoef_load, echo=FALSE>>=
+load("distrcoef_size1.RData")
+estimates_distrcoef_size1_id <- sapply(list(distrcoef_n100_size1_id, distrcoef_n500_size1_id, distrcoef_n1000_size1_id, distrcoef_n2000_size1_id), function(x) x$estimates[4, ])
+estimates_distrcoef_size1_log <- sapply(list(distrcoef_n100_size1_log, distrcoef_n500_size1_log, distrcoef_n1000_size1_log, distrcoef_n2000_size1_log), function(x) x$estimates[4, ])
+
+load("distrcoef_n200.RData")
+@
+%
+<<distrcoef_summary, echo=FALSE, results=tex>>=
+distrcoef_nu <- function(estimates) c(mean=mean(estimates, na.rm=TRUE), median=median(estimates, na.rm=TRUE), sd=sd(estimates, na.rm=TRUE), mad=mad(estimates, na.rm=TRUE), propNA=mean(is.na(estimates))*100)
+# distrcoef_id_summary <- rbind(
+#   size1=distrcoef_nu(1/distrcoef_n200_size1_id$estimates["size", ]),
+#   size5=distrcoef_nu(1/distrcoef_n200_size5_id$estimates["size", ]),
+#   size10=distrcoef_nu(1/distrcoef_n200_size10_id$estimates["size", ]),
+#   size20=distrcoef_nu(1/distrcoef_n200_size20_id$estimates["size", ]),
+#   sizeInf=distrcoef_nu(1/distrcoef_n200_sizeInf_id$estimates["size", ])
+# )
+distrcoef_log_summary <- rbind(
+  size1=distrcoef_nu(1/distrcoef_n200_size1_log$estimates["size", ]),
+  size5=distrcoef_nu(1/distrcoef_n200_size5_log$estimates["size", ]),
+  size10=distrcoef_nu(1/distrcoef_n200_size10_log$estimates["size", ]),
+  size20=distrcoef_nu(1/distrcoef_n200_size20_log$estimates["size", ]),
+  sizeInf=distrcoef_nu(1/distrcoef_n200_sizeInf_log$estimates["size", ])
+)
+colnames(distrcoef_log_summary) <- c("\\textbf{Mean}", "\\textbf{Median}", "\\textbf{Std.dev.}", "\\textbf{MAD}", "\\textbf{Failures (in \\%)}")
+rownames(distrcoef_log_summary) <- c("$\\sigma^2=\ $ 1.00", "0.20", "0.10", "0.05", "0.00")
+
+library("xtable")
+print(xtable(distrcoef_log_summary, caption="Summary statistics for the estimated overdispersion coefficient $\\widehat{\\sigma}^2$ of the Negative Binomial distribution. The time series are simulated from a log-linear model with the true overdispersion coefficient given in the rows. Each statistic is based on 200 replications.", label="tab:distrcoef_summary", align="rrrrrr", digits=c(0,2,2,2,2,2)), table.placement="tbp", caption.placement="bottom", booktabs=TRUE, comment=FALSE, sanitize.text.function=function(x){x})
+@
+%
+<<distrcoef_boxplots, echo=FALSE>>=
+##RMSE:
+#apply(estimates_distrcoef_size1_id, 2, function(x) sqrt(mean((x-1)^2)))
+#apply(estimates_distrcoef_size1_id, 2, function(x) sqrt(mean((x-1)^2)))
+
+pdf("tscount-distrcoef_boxplots.pdf", width=7, height=2.5)
+par(mfrow=c(1,2), mar=c(3,0.25,1.8,0.25), mgp=c(1.7,0.5,0), oma=c(0,3.5,0,0.5))
+boxplot(estimates_distrcoef_size1_id[, 4:1], horizontal=TRUE, main="Linear model", names=rev(c(100, 500, 1000, 2000)), ylab="", xlab=expression(hat(sigma)^2), las=1, ylim=c(0.5,2.5))
+abline(v=1, col="darkgrey")
+mtext(text="Length of time series", side=2, line=2.5)
+boxplot(estimates_distrcoef_size1_log[, 4:1], horizontal=TRUE, main="Log-linear model", names=rev(c(100, 500, 1000, 2000)), ylab="Sample size", xlab=expression(hat(sigma)^2), cex=0.8, yaxt="n", ylim=c(0.5,2.5))
+abline(v=1, col="darkgrey")
+invisible(dev.off())
+@
+%
+\begin{figure}[bt]
+\centering
+\includegraphics[width=0.9\textwidth]{tscount-distrcoef_boxplots}
+\caption{Estimated overdispersion coefficient $\widehat{\sigma}^2$ of the Negative Binomial distribution for a linear (left) respectively log-linear (right) model of order $p=q=1$. The time series are simulated from the respective model with the true overdispersion coefficient marked by a grey vertical line. Each boxplot is based on 200 replications.
+} 
+\label{fig:distrcoef_boxplots}
+\end{figure}
+
+The estimator of the dispersion parameter $\phi$ has a positively skewed distribution. It is thus preferable to consider the distribution of its inverse $\widehat{\sigma}^2=1/\widehat{\phi}$, which is only slightly negatively skewed; see Table~\ref{tab:distrcoef_summary}.
+%We see from Table~\ref{tab:distrcoef_summary} that the median and not the mean of the estimations is close to the true value. Accordingly, it is about equally likely to under- and to overestimate the true parameter but on average we overestimate it. %This refers to the dispersion coefficient phi and not to its inverse sigma^2.
+In certain cases it is numerically not possible to solve~\eqref{eq:dispestim} and the estimation fails. This happens when the true value of $\phi$ is large and we are close to the limiting case of a Poisson distribution (see the proportion of failures in the last column of the table). In such a case our fitting function gives an error and recommends fitting a model with a Poisson distribution instead.
+These results are very similar for the linear model and thus not shown here.
+
+We check the consistency of the estimator by a simulation for a true value of $\sigma^2=1/\phi=1$. Our results shown in Figure~\ref{fig:distrcoef_boxplots} indicate that on average the deviation of the estimation from the true value decreases with increasing sample size for both, the linear and the log-linear model. The boxplots also confirm our above finding that the estimator has a clearly asymmetric distribution for sample sizes up to several hundred.
+
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% \subsection{Start estimation}
+% 
+% <<initest_load, echo=FALSE>>=
+% load("initest.RData")
+% 
+% initest_rmse_id <- list(
+%   RMSE_init_CSS_id=sqrt(sapply(initest_CSS_id, function(y) apply((y$estimates[4:6,] - c(0.5*4, 0.3, 0.2))^2, 1, mean))),
+%   RMSE_final_CSS_id=sqrt(sapply(initest_CSS_id, function(y) apply((y$estimates[1:3,] - c(0.5*4, 0.3, 0.2))^2, 1, mean))),
+%   RMSE_init_GLM_id=sqrt(sapply(initest_GLM_id, function(y) apply((y$estimates[4:6,] - c(0.5*4, 0.3, 0.2))^2, 1, mean))),
+%   RMSE_final_GLM_id=sqrt(sapply(initest_GLM_id, function(y) apply((y$estimates[1:3,] - c(0.5*4, 0.3, 0.2))^2, 1, mean))),
+%   RMSE_init_iid_id=sqrt(sapply(initest_iid_id, function(y) apply((y$estimates[4:6,] - c(0.5*4, 0.3, 0.2))^2, 1, mean))),
+%   RMSE_final_iid_id=sqrt(sapply(initest_iid_id, function(y) apply((y$estimates[1:3,] - c(0.5*4, 0.3, 0.2))^2, 1, mean)))
+% )
+% initest_rmse_log <- list(
+%   RMSE_init_CSS_log=sqrt(sapply(initest_CSS_log, function(y) apply((y$estimates[4:6,] - c(0.5*log(4), 0.3, 0.2))^2, 1, mean))),
+%   RMSE_final_CSS_log=sqrt(sapply(initest_CSS_log, function(y) apply((y$estimates[1:3,] - c(0.5*log(4), 0.3, 0.2))^2, 1, mean))),
+%   RMSE_init_GLM_log=sqrt(sapply(initest_GLM_log, function(y) apply((y$estimates[4:6,] - c(0.5*log(4), 0.3, 0.2))^2, 1, mean))),
+%   RMSE_final_GLM_log=sqrt(sapply(initest_GLM_log, function(y) apply((y$estimates[1:3,] - c(0.5*log(4), 0.3, 0.2))^2, 1, mean))),
+%   RMSE_init_iid_log=sqrt(sapply(initest_iid_log, function(y) apply((y$estimates[4:6,] - c(0.5*log(4), 0.3, 0.2))^2, 1, mean))),
+%   RMSE_final_iid_log=sqrt(sapply(initest_iid_log, function(y) apply((y$estimates[1:3,] - c(0.5*log(4), 0.3, 0.2))^2, 1, mean)))
+% )
+% @
+% 
+% <<initest_rmseplots, echo=FALSE>>=
+% initest_rmseplot <- function(x, index, label, ylim=c(0.3, 1.3)){
+%   samplesizes <- c(100, 500, 1000, 2000)
+%   plot(NA, xlim=c(100, 2000), ylim=ylim, type="n", xlab="Length of time series", ylab="RMSE", log="x", xaxt="n", cex.lab=1.4)
+%   lines(samplesizes, x[[1]][index,], type="o", lty="dashed")
+%   lines(samplesizes, x[[2]][index,], type="o")
+%   lines(samplesizes, x[[3]][index,], type="o", pch=2, lty="dashed")
+%   lines(samplesizes, x[[4]][index,], type="o", pch=2)
+%   lines(samplesizes, x[[5]][index,], type="o", pch=8, lty="dashed")
+%   lines(samplesizes, x[[6]][index,], type="o", pch=8)
+%   text(120, 0, label=label, cex=2, pos=3)
+%   #legend("bottomleft", legend="", title=label, bty="n", cex=2)
+% }
+% 
+% pdf("tscount-initest_rmseplots.pdf", width=3.5, height=5)
+% par(mfrow=c(3,1), mar=c(0.25,4,0,0), las=1, mgp=c(2.5,0.6,0), oma=c(2.5,0,2.5,1))
+% initest_rmseplot(initest_rmse_id, index=1, label=expression(beta[0]), ylim=c(0, 1))
+% initest_rmseplot(initest_rmse_id, index=2, label=expression(beta[1]), ylim=c(0, 0.3))
+% initest_rmseplot(initest_rmse_id, index=3, label=expression(alpha[1]), ylim=c(0, 0.25))
+% axis(side=1, line=0)
+% mtext(text="Length of time series", side=1, line=1.7, cex=0.9)
+% title(main="         Linear model", outer=TRUE, cex.main=1.6)
+% par(mfrow=c(3,1), mar=c(0.25,4,0,0), las=1, mgp=c(2.5,0.6,0), oma=c(2.5,0,2.5,1))
+% initest_rmseplot(initest_rmse_log, index=1, label=expression(beta[0]), ylim=c(0, 1))
+% initest_rmseplot(initest_rmse_log, index=2, label=expression(beta[1]), ylim=c(0, 0.3))
+% legend("topright", legend=c("ARMA ", "GLM ", "ARMA", "GLM"), ncol=2, title="Initial estim.:   Final estim.:    ", lwd=1, lty=c("dashed", "dashed", "solid", "solid"), pch=c(1,2,1,2), bg="white", cex=1.1)
+% initest_rmseplot(initest_rmse_log, index=3, label=expression(alpha[1]), ylim=c(0, 0.4))
+% axis(side=1, line=0)
+% mtext(text="Length of time series", side=1, line=1.7, cex=0.9)
+% title(main="        Log-linear model", outer=TRUE, cex.main=1.6)
+% invisible(dev.off())
+% @
+% 
+% \begin{figure}[bt]
+% \centering
+% \includegraphics[width=0.45\textwidth, page=1]{tscount-initest_rmseplots}
+% \includegraphics[width=0.45\textwidth, page=2]{tscount-initest_rmseplots}
+% \caption{Root mean square error (RMSE) of two different initial estimators (dashed lines) for a linear (left) respectively log-linear (right) model of order $p=q=1$. The time series are simulated from the same model. The final maximum likelihood estimators based on the respective initial estimator are shown with solid lines. Each value is based on 1000 replications.
+% } 
+% \label{fig:initest_rmseplots}
+% \end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}

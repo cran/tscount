@@ -1,0 +1,46 @@
+importFrom(parallel, parSapply)
+importFrom(ltsa, tacvfARMA)
+
+export(
+  tsglm,
+  tsglm.sim,
+  ingarch.fit,
+  ingarch.mean,
+  ingarch.var,
+  ingarch.acf,
+  loglin.fit,
+  interv_covariate,
+  interv_detect,
+  interv_multiple,
+  interv_test,
+  invertinfo,
+  se,
+  scoring,
+  pit,
+  marcal
+)
+
+S3method(print, tsglm)
+S3method(logLik, tsglm)
+S3method(residuals, tsglm)
+S3method(plot, tsglm)
+S3method(summary, tsglm)
+S3method(predict, tsglm)
+S3method(vcov, tsglm)
+S3method(se, tsglm)
+S3method(marcal, tsglm)
+S3method(pit, tsglm)
+S3method(scoring, tsglm)
+S3method(interv_test, tsglm)
+S3method(interv_detect, tsglm)
+S3method(interv_multiple, tsglm)
+
+S3method(print, summary.tsglm)
+
+S3method(print, interv_test)
+
+S3method(print, interv_detect)
+S3method(plot, interv_detect)
+
+S3method(print, interv_multiple)
+S3method(plot, interv_multiple)
