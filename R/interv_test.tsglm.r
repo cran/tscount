@@ -21,7 +21,7 @@ interv_test.tsglm <- function(fit, tau, delta, external, info=c("score"), est_in
     colnames(xreg_extended) <- c(colnames(fit$xreg), colnames(covariate)) 
     model_extended$external <- c(fit$model$external, external)
     loglik <- tsglm.loglik(link=fit$link, paramvec=param_H0_extended, model=model_extended, ts=fit$ts, xreg=xreg_extended, score=TRUE, info=info)   
-  infomat_corrected <- apply((1/loglik$kappa + fit$sigmasq)*loglik$outerscoreprod, c(2,3), sum)
+  infomat_corrected <- apply((1/loglik$nu + fit$sigmasq)*loglik$outerscoreprod, c(2,3), sum)
   test_statistic <- scoretest(Score=loglik$score, G=loglik$info, G1=infomat_corrected, r=r, stopOnError=TRUE)$test_statistic    
   p_value <- 1-pchisq(test_statistic, df=r)
   result <- list(

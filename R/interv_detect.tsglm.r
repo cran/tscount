@@ -36,7 +36,7 @@ interv_detect.tsglm <- function(fit, taus=2:length(fit$ts), delta, external=FALS
     for(j in seq(along=taus)){
       xreg_extended <- cbind(xreg, interv_covariate(n=n, tau=taus[j], delta=delta)) #is overwritten for each tau
       loglik <- tsglm.loglik(link=link, paramvec=param_H0_extended, model=model_extended, ts=ts, xreg=xreg_extended, score=TRUE, info=info, condmean=condmean_H0, from=taus[j])
-      infomat_corrected <- apply((1/loglik$kappa + fit$sigmasq)*loglik$outerscoreprod, c(2,3), sum)
+      infomat_corrected <- apply((1/loglik$nu + fit$sigmasq)*loglik$outerscoreprod, c(2,3), sum)
       test_statistic_temp <- scoretest(Score=loglik$score, G=loglik$info, G1=infomat_corrected, r=1, stopOnError=stopOnError, silent=TRUE)
       if(!is.null(test_statistic_temp$error_message)){
         return(list(error_message=test_statistic_temp$error_message))

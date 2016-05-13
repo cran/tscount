@@ -1,7 +1,7 @@
 ingarch.acf <- function(intercept, past_obs=NULL, past_mean=NULL, lag.max=10, type=c("acf", "pacf", "acvf"), plot=TRUE, ...){
 #Theoretical autocorrelation function of a Poisson INGARCH(p,q) process
 ##############################
-  ingarch.parametercheck(param=list(intercept=intercept, past_obs=past_obs, past_mean=past_mean, xreg=NULL))  
+  tsglm.parametercheck(param=list(intercept=intercept, past_obs=past_obs, past_mean=past_mean, xreg=NULL), link="identity")  
   type <- match.arg(type)
   p <- length(past_mean)
   q <- length(past_obs)

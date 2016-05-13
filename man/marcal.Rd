@@ -1,14 +1,16 @@
-\name{marcal.tsglm}
-\alias{marcal.tsglm}
+\name{marcal}
 \alias{marcal}
+\alias{marcal.default}
+\alias{marcal.tsglm}
 \title{
-Predictive Model Assessment with a Marginal Calibration Plot for Time Series Following Generalised Linear Models
+Predictive Model Assessment with a Marginal Calibration Plot
 }
 \description{
 The function produces a marginal calibration plot.
 }
 \usage{
 \method{marcal}{tsglm}(object, plot=TRUE, ...)
+\method{marcal}{default}(response, pred, distr=c("poisson", "nbinom"), distrcoefs, plot=TRUE, ...)
 }
 \arguments{
   \item{object}{
@@ -16,6 +18,18 @@ an object of class \code{"tsglm"}.
 }
   \item{plot}{
   logical. If \code{plot=TRUE} (the default), the marginal calibration is plotted and the underlying data are returned invisibly only. 
+}
+  \item{response}{
+integer vector. Vector of observed values.
+}
+  \item{pred}{
+numeric vector. Vector of predicted values.
+}
+  \item{distr}{
+character giving the conditional distribution. Currently implemented are the Poisson (\code{"poisson"})and the Negative Binomial (\code{"nbinom"}) distribution.
+}
+  \item{distrcoefs}{
+numeric vector of additional coefficients specifying the conditional distribution. For \code{distr="poisson"} no additional parameters need to be provided. For \code{distr="nbinom"} the additional parameter \code{size} needs to be specified (e.g. by \code{distrcoefs=2}), see \code{\link{tsglm}} for details.
 }
   \item{...}{
 additional arguments to be passed to \code{\link{plot}}.
@@ -45,7 +59,7 @@ Philipp Probst and Tobias Liboschik
 \seealso{
 \code{\link{tsglm}} for fitting a GLM for time series of counts.
 
-\code{\link[=pit.tsglm]{pit}} and \code{\link[=scoring.tsglm]{scoring}} for other predictive model assessment tools for time series following GLMs.
+\code{\link{pit}} and \code{\link{scoring}} for other predictive model assessment tools.
 }
 
 \examples{

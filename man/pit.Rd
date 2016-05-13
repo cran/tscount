@@ -1,15 +1,16 @@
-\name{pit.tsglm}
-\alias{pit.tsglm}
+\name{pit}
 \alias{pit}
+\alias{pit.default}
+\alias{pit.tsglm}
 \title{
-Predictive Model Assessment with a Probability Integral Transform Histogram for Time Series Following Generalised Linear Models
+Predictive Model Assessment with a Probability Integral Transform Histogram
 }
 \description{
 The function allows a probabilistic calibration check with a Probability Integral Transform (PIT) histogram.
 }
 \usage{
 \method{pit}{tsglm}(object, bins=10, ...)
-%\method{pit}{tsglm}(object, bins=10, ci=0.95, ci.col="blue", ...)
+\method{pit}{default}(response, pred, distr=c("poisson", "nbinom"), distrcoefs, bins=10, ...)
 }
 \arguments{
   \item{object}{
@@ -17,6 +18,18 @@ an object of class \code{"tsglm"}.
 }
   \item{bins}{
 number of bins in the histogram. Default value is 10.
+}
+  \item{response}{
+integer vector. Vector of observed values.
+}
+  \item{pred}{
+numeric vector. Vector of predicted values.
+}
+  \item{distr}{
+character giving the conditional distribution. Currently implemented are the Poisson (\code{"poisson"})and the Negative Binomial (\code{"nbinom"}) distribution.
+}
+  \item{distrcoefs}{
+numeric vector of additional coefficients specifying the conditional distribution. For \code{distr="poisson"} no additional parameters need to be provided. For \code{distr="nbinom"} the additional parameter \code{size} needs to be specified (e.g. by \code{distrcoefs=2}), see \code{\link{tsglm}} for details.
 }
 %  \item{ci}{
 %coverage probability for confidence band. Plotting of the confidence interval is suppressed if \code{ci} is not between zero and one.
@@ -49,7 +62,7 @@ Philipp Probst and Tobias Liboschik
 \seealso{
 \code{\link{tsglm}} for fitting a GLM for time series of counts.
 
-\code{\link[=marcal.tsglm]{marcal}} and \code{\link[=scoring.tsglm]{scoring}} for other predictive model assessment tools for time series following GLMs.
+\code{\link{marcal}} and \code{\link{scoring}} for other predictive model assessment tools.
 }
 
 \examples{

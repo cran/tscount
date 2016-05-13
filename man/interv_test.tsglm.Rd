@@ -53,7 +53,7 @@ An object of class \code{"interv_test"}, which is a list with at least the follo
   \item{df}{
   degrees of freedom of the chi-squared distribution the test statistic is compared with.
 }
-  \item{p-value}{
+  \item{p_value}{
   p-value of the test.
 }
   \item{fit_H0}{

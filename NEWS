@@ -1,0 +1,9 @@
+Changes since version 1.0.0
+  * The structure of the package has beed simplified with respect to the different link functions to avoid duplicated code (this does not affect the usage of the package).
+  * Functions 'se' and 'summary.tsglm' now return confidence intervals.
+  * New function 'QIC' computes a quasi information criterion.
+  * Some auxiliary functions for count data distributions have been exported now (see 'help(countdistr)').
+  * Covariates with negative values are no longer tolerated when fitting models with the identity link function but produce an error.
+  * S3 method 'predict' for class "tsglm" was extended. It now allows to choose the construction  principle (argument 'type'), the computation method (argument 'method'), if the estimation error is accounted for (argument 'estim' and additional arguments 'B_estim' and 'coefs_given') and whether the coverage rate should hold globally (argument 'global').
+  * Functions 'marcal', 'pit' and 'scoring' now have a default S3 method which makes them more generally usable than just for objects of class "tsglm".
+  * Function 'scoring' does now allow to return the individual scores and not only the mean (argument 'individual').

@@ -17,6 +17,8 @@ Tobias Liboschik <liboschik@statistik.tu-dortmund.de>
 \references{
 Christou, V. and Fokianos, K. (2014) Quasi-likelihood inference for negative binomial time series models. \emph{Journal of Time Series Analysis} \bold{35(1)}, 55--78, \url{http://dx.doi.org/10.1002/jtsa.12050}.
 
+Christou, V. and Fokianos, K. (2015) Estimation and testing linearity for non-linear mixed poisson autoregressions. \emph{Electronic Journal of Statistics} \bold{9}, 1357--1377, \url{http://dx.doi.org/10.1214/15-EJS1044}.
+
 Ferland, R., Latour, A. and Oraichi, D. (2006) Integer-valued GARCH process. \emph{Journal of Time Series Analysis} \bold{27(6)}, 923--942, \url{http://dx.doi.org/10.1111/j.1467-9892.2006.00496.x}.
 
 Fokianos, K. and Fried, R. (2010) Interventions in INGARCH processes. \emph{Journal of Time Series Analysis} \bold{31(3)}, 210--225, \url{http://dx.doi.org/10.1111/j.1467-9892.2010.00657.x}.

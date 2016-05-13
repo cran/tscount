@@ -8,7 +8,7 @@ Summarising Fits of Count Time Series following Generalised Linear Models
 \code{summary} method for class \code{"tsglm"}.
 }
 \usage{
-\method{summary}{tsglm}(object, B, parallel=FALSE, ...)
+\method{summary}{tsglm}(object, B, parallel=FALSE, level=0.95, ...)
 }
 \arguments{
   \item{object}{
@@ -19,6 +19,9 @@ controls the computation of standard errors. Is passed to \code{\link[=se.tsglm]
   }
   \item{parallel}{
 controls the computation of standard errors. Is passed to \code{\link[=se.tsglm]{se}}.
+}
+  \item{level}{
+controls the computation of conficence intervals. Is passed to \code{\link[=se.tsglm]{se}}.
 }
   \item{...}{
 further arguments are currently ignored. Only for compatibility with generic function.
@@ -38,19 +41,23 @@ A named list with the following elements:
  
   \item{residuals}{see \code{\link{tsglm}}.}
  
-  \item{coefficients}{data frame with estimated parameters and their standard errors (based on a normal approximation or a parametric bootstrap, see \code{\link[=se.tsglm]{se}}).}
+  \item{coefficients}{data frame with estimated parameters, their standard errors  and confidence intervals (based on a normal approximation or a parametric bootstrap, see \code{\link[=se.tsglm]{se.tsglm}}).}
+  
+  \item{level}{numerical value giving the coverage rate of the confidence intervals.}
   
   \item{number.coef}{number of coefficients.}
  
-  \item{se.type}{type of standard errors, see \code{\link{se.tsglm}}.}
+  \item{se.type}{type of standard errors, see \code{\link[=se.tsglm]{se.tsglm}}.}
   
-  \item{se.bootstrapsamples}{number of bootstrap samples used for estimation of the standard errors, see \code{\link{se.tsglm}}. Is omitted if the standard errors are not obtained by a bootstrap procedure.}
+  \item{se.bootstrapsamples}{number of bootstrap samples used for estimation of the standard errors, see \code{\link[=se.tsglm]{se.tsglm}}. Is omitted if the standard errors are not obtained by a bootstrap procedure.}
   
-  \item{logLik}{value of the maximised log-likelihood function.}
+  \item{logLik}{value of the log-likelihood function evaluated at the (quasi) maximum likelihood estimate.}
  
-  \item{AIC}{Akaike's information criterion (AIC).}
+  \item{AIC}{Akaike's information criterion (AIC), see \code{\link{AIC}}.}
  
-  \item{BIC}{Bayesian information criterion (BIC).}  
+  \item{BIC}{Bayesian information criterion (BIC), see \code{\link{BIC}}.} 
+  
+  \item{QIC}{Quasi information criterion (QIC), see \code{\link[=QIC.tsglm]{QIC.tsglm}}.}   
  
   \item{pearson.resid}{Pearson residuals, see \code{\link{residuals.tsglm}}.}
 }
@@ -71,7 +78,7 @@ regressors <- cbind(PetrolPrice=Seatbelts[, c("PetrolPrice")],
                     linearTrend=seq(along=timeseries)/12)
 #Logarithmic link function with Poisson distribution:                    
 seatbeltsfit <- tsglm(ts=timeseries, link="log",
-  model=list(past_obs=c(1, 12)), xreg=regressors, distr="pois")
+  model=list(past_obs=c(1, 12)), xreg=regressors, distr="poisson")
 summary(seatbeltsfit)
 }
 

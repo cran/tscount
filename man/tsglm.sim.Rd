@@ -38,7 +38,7 @@ tsglm.sim(n, param = list(intercept = 1, past_obs = NULL, past_mean = NULL,
     character giving the conditional distribution. Default is \code{"poisson"}, i.e. a Poisson distribution.
 }
   \item{distrcoefs}{
-  numeric vector of additional coefficients specifying the conditional distribution. For \code{distr="poisson"} no additional parameters need to be provided. For \code{distr="nbinom"} the additional parameter \code{size} needs to be specified (i.e. by \code{distrcoefs=2}), see \code{\link{tsglm}} for details.
+  numeric vector of additional coefficients specifying the conditional distribution. For \code{distr="poisson"} no additional parameters need to be provided. For \code{distr="nbinom"} the additional parameter \code{size} needs to be specified (e.g. by \code{distrcoefs=2}), see \code{\link{tsglm}} for details.
 }
   \item{fit}{
   an object of class \code{"tsglm"}. Usually the result of a call to \code{\link{tsglm}}. If argument \code{fit} is not missing, the specification of the linear predictor, the link function and the estimated parameters from this argument are used instead of those in arguments \code{model}, \code{link} and \code{param}. The length of the simulated time series is only taken from argument \code{fit}, if no argument \code{n} is provided. The same holds for arguments \code{xreg}, \code{distr} and \code{distrcoefs}, which are also prefered over the respective information provided in argument \code{fit} if both are provided.
@@ -63,7 +63,7 @@ If a previous model fit is given in argument \code{fit} and the length of the bu
   an object of class \code{"ts"} with the simulated time series.
 }
 \item{\code{linear.predictors}}{
-  an object of class \code{"ts"} with the simulated conditional means \eqn{\kappa_t}{\kappa[t]} for all \eqn{t=1, \ldots, n}.
+  an object of class \code{"ts"} with the simulated linear predictors \eqn{\kappa_t}{\kappa[t]} for all \eqn{t=1, \ldots, n}.
 }
 \item{\code{xreg.effects}}{
   an object of class \code{"ts"} with the cumulated effect of the covariates \eqn{\eta_1 X_{t,1} + \ldots + \eta_r X_{t,r}}{\eta[1] X[t,1] + \ldots + \eta[r] X[t,r]} for all \eqn{t=1, \ldots, n}.

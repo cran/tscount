@@ -23,18 +23,12 @@ tsglm.sim <- function(n, param=list(intercept=1, past_obs=NULL, past_mean=NULL, 
     link <- fit$link
   }else{
     if(missing(n)) stop("Argument 'n' is missing. Either provide this argument or an argument 'fit' with the result of a previous model fit")
-    #if(missing(param)) stop("Argument 'param' is missing. Either provide this argument or an argument 'fit' with the result of a previous model fit")
-    #if(missing(model)) stop("Argument 'model' is missing. Either provide this argument or an argument 'fit' with the result of a previous model fit")
-    #if(missing(xreg)) stop("Argument 'xreg' is missing. Either provide this argument or an argument 'fit' with the result of a previous model fit")
   }
   
   #Check and modify arguments:
   link <- match.arg(link)
   distr <- match.arg(distr)
-  if(distr=="nbinom"){
-    if(missing(distrcoefs) || length(distrcoefs)!=1) stop("For the negative binomial parameter (only) the dispersion parameter 'size' has to be provided in argument 'distrcoefs'")
-    if(distrcoefs<=0) stop("The additional dispersion parameter for the negative binomial distribution has to be greater than zero")
-  }
+  checkdistr(distr=distr, distrcoefs=distrcoefs)
   model_names <- c("past_obs", "past_mean", "external")
   stopifnot(
     n%%1==0 & n>=0,
@@ -45,7 +39,7 @@ tsglm.sim <- function(n, param=list(intercept=1, past_obs=NULL, past_mean=NULL, 
   )
   model <- model[model_names]
   names(model) <- model_names
-  if(is.null(xreg)) xreg <- matrix(0, nrow=n, ncol=0) else xreg <- as.matrix(xreg)
+  if(is.null(xreg) || (is.matrix(xreg) && ncol(xreg)==0)) xreg <- matrix(0, nrow=n, ncol=0) else xreg <- as.matrix(xreg)
   p <- length(model$past_obs)
   P <- seq(along=numeric(p)) #sequence 1:p if p>0 and NULL otherwise
   p_max <- max(model$past_obs, 0)
@@ -93,61 +87,39 @@ tsglm.sim <- function(n, param=list(intercept=1, past_obs=NULL, past_mean=NULL, 
   
   #Check parameter restrictions:
   denom <- (1-sum(param$past_obs)-sum(param$past_mean))[[1]]    
-  kappa_stationary <- (param$intercept/denom)[[1]]
-  if(link=="identity"){
-    ingarch.parametercheck(param)
-    if(kappa_stationary > 1e+09) stop("Too large mean to simulate from Poisson distribution, sum of parameters for regression on past observations and on past conditional means might be too close to one and/or intercept is too large")
-  }
-  if(link=="log"){
-    sum_param_past <- sum(abs(param$past_obs))+sum(abs(param$past_mean))
-    if(sum_param_past>=1) stop(paste("Parameters are outside the stationary region, sum of absolute parameters for regression on past observations and on past conditional means is", sum_param_past, "> 1")) 
-  }
-    
+  nu_stationary <- (param$intercept/denom)[[1]]
+  tsglm.parametercheck(param, link=link)
+  if(link=="identity") if(nu_stationary > 1e+09) stop("Too large mean to simulate from Poisson distribution, sum of parameters for regression on past observations and on past conditional means might be too close to one and/or intercept is too large")
+     
   n_total <- n_start + n #total number of observations to be simulated (including burn-in)
-  
-  #Random number generation from conditional distribution:
-  if(distr=="poisson") rdistr <- function(n, meanvalue, distrcoefs) rpois(n, lambda=meanvalue)
-  if(distr=="nbinom") rdistr <- function(n, meanvalue, distrcoefs) rnbinom(n, mu=meanvalue, size=distrcoefs)
-  
-  #Link and related functions:
-  if(link=="identity"){
-    g <- function(x) x #link function
-    trafo <- function(x) x #transformation function
-    g_inv <- function(x) x  #inverse of link function
-  }
-  if(link=="log"){
-    g <- function(x) log(x) #link function
-    trafo <- function(x) if(!is.null(x)) log(x+1) else NULL #transformation function
-    g_inv <- function(x) exp(x) #inverse of link function
-  }
 
   #Initialisation:
   if(n_start==0 & !missing(fit)){ #If simulation is based on a given fit and the length of the burn-in period is chosen to be 0, the the simulated observations are a direct continuation of the available observations.
     X_init <- fit$xreg[fit$n_obs-rev(Q_max)+1, , drop=FALSE]
-    kappa_init <- fit$linear.predictors[fit$n_obs-rev(Q_max)+1]
-    z_init <- fit$ts[fit$n_obs-rev(P_max)+1]
+    nu_init <- fit$linear.predictors[fit$n_obs-rev(Q_max)+1]
+    y_init <- fit$ts[fit$n_obs-rev(P_max)+1]
   }else{
     X_init <- matrix(0, nrow=q_max+n_start, ncol=r) #the covariates during the burn-in period are set to zero because no other values are available
-    kappa_init <- rep(kappa_stationary, q_max)
-    z_init <- rdistr(p_max, meanvalue=g_inv(kappa_stationary), distrcoefs=distrcoefs)
+    nu_init <- rep(nu_stationary, q_max)
+    y_init <- rdistr(n=p_max, meanvalue=g_inv(nu_stationary, link=link), distr=distr, distrcoefs=distrcoefs)
   }
   X <- rbind(X_init, xreg)    
-  kappa <- c(kappa_init, numeric(n_total))  
-  z <- c(z_init, integer(n_total))
+  nu <- c(nu_init, numeric(n_total))  
+  y <- c(y_init, integer(n_total))
     
   #Recursion:  
   for(t in 1:n_total){
-    kappa[t+q_max] <- param$intercept + sum(param$past_obs*trafo(z[(t-model$past_obs)+p_max])) + sum(param$past_mean*kappa[(t-model$past_mean)+q_max]) + if(r>0){sum(param$xreg*X[t+q_max,]) - if(q>0){sum(param$past_mean*colSums(model$external*param$xreg*t(X[(t-model$past_mean)+q_max, , drop=FALSE])))}else{0}}else{0}
-    z[t+p_max] <- rdistr(1, meanvalue=g_inv(kappa[t+q_max]), distrcoefs=distrcoefs)
+    nu[t+q_max] <- param$intercept + sum(param$past_obs*trafo(y[(t-model$past_obs)+p_max], link=link)) + sum(param$past_mean*nu[(t-model$past_mean)+q_max]) + if(r>0){sum(param$xreg*X[t+q_max,]) - if(q>0){sum(param$past_mean*colSums(model$external*param$xreg*t(X[(t-model$past_mean)+q_max, , drop=FALSE])))}else{0}}else{0}
+    y[t+p_max] <- rdistr(n=1, meanvalue=g_inv(nu[t+q_max], link=link), distr=distr, distrcoefs=distrcoefs)
   }    
 
   #Remove initialisation:
-  z <- z[p_max+n_start+(1:n)]
-  kappa <- kappa[q_max+n_start+(1:n)]
+  y <- y[p_max+n_start+(1:n)]
+  nu <- nu[q_max+n_start+(1:n)]
     
-  z <- as.ts(z)
-  kappa <- as.ts(kappa)
+  y <- as.ts(y)
+  nu <- as.ts(nu)
   xreg_effect <- as.ts(colSums(param$xreg*t(xreg)))
-  result <- list(ts=z, linear.predictors=kappa, xreg.effects=xreg_effect)
+  result <- list(ts=y, linear.predictors=nu, xreg.effects=xreg_effect)
   return(result)
 }

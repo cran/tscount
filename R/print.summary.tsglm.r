@@ -3,9 +3,9 @@ print.summary.tsglm <- function(x, ...){
     cat("\nCall:\n", paste(deparse(x$call), sep="\n", collapse = "\n"), "\n\n", sep="")
     cat("Coefficients:\n")
     print(format.data.frame(as.data.frame(coef(x)), digits=3), print.gap=2, quote=FALSE, na.print="")
-    if(!is.null(coef(x)$"Std. Error")){
-      if(x$se.type == "normapprox") cat("Standard errors obtained by normal approximation.\n")
-      if(x$se.type == "bootstrap") cat("Standard errors obtained by parametric bootstrap with", x$se.bootstrapsamples, "replications.\n")
+    if(!is.null(coef(x)$"Std.Error")){
+      if(x$se.type == "normapprox") cat("Standard errors and confidence intervals (level = ", x$level*100, "%) obtained\nby normal approximation.\n")
+      if(x$se.type == "bootstrap") cat("Standard errors and confidence intervals (level = ", x$level*100, "%) obtained\nby parametric bootstrap with", x$se.bootstrapsamples, "replications.\n")
     }
     cat(
       "\nLink function:", x$link,
@@ -14,6 +14,7 @@ print.summary.tsglm <- function(x, ...){
       "\nLog-likelihood:", x$logLik,
       "\nAIC:", x$AIC,
       "\nBIC:", x$BIC,
+      "\nQIC:", x$QIC,
     "\n\n")
   }else{ 
     if(length(x$init)>0){

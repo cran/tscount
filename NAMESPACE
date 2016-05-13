@@ -1,14 +1,16 @@
+import(stats)
+import(utils)
+import(grDevices)
+import(graphics)
 importFrom(parallel, parSapply)
 importFrom(ltsa, tacvfARMA)
 
 export(
   tsglm,
   tsglm.sim,
-  ingarch.fit,
   ingarch.mean,
   ingarch.var,
   ingarch.acf,
-  loglin.fit,
   interv_covariate,
   interv_detect,
   interv_multiple,
@@ -17,8 +19,20 @@ export(
   se,
   scoring,
   pit,
-  marcal
+  marcal,
+  QIC,
+  ddistr,
+  pdistr,
+  qdistr,
+  rdistr,
+  sddistr,
+  ardistr,
+  checkdistr
 )
+
+S3method(marcal, default)
+S3method(pit, default)
+S3method(scoring, default)
 
 S3method(print, tsglm)
 S3method(logLik, tsglm)
@@ -31,9 +45,11 @@ S3method(se, tsglm)
 S3method(marcal, tsglm)
 S3method(pit, tsglm)
 S3method(scoring, tsglm)
+S3method(QIC, tsglm)
 S3method(interv_test, tsglm)
 S3method(interv_detect, tsglm)
 S3method(interv_multiple, tsglm)
+S3method(simcoefs, tsglm)
 
 S3method(print, summary.tsglm)
 

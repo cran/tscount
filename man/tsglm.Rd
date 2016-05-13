@@ -2,8 +2,7 @@
 \alias{tsglm}
 \alias{print.tsglm}
 \alias{logLik.tsglm}
-\alias{ingarch.fit}
-\alias{loglin.fit}
+\alias{mean.fit}
 \alias{vcov.tsglm}
 \title{
 Count Time Series Following Generalised Linear Models
@@ -18,29 +17,19 @@ Estimation is done by conditional maximum likelihood for the Poisson distributio
 
 There is a vignette available which introduces the functionality of \code{tsglm} and related functions of this package and its underlying statistical methods (\code{vignette("tsglm", package="tscount")}).
 
-The function \code{ingarch.fit} is a lower level function to fit the mean specification of an INGARCH model assuming a Poisson distribution. It is called by \code{tsglm}. It has additional arguments allowing for a finer control of the fitting procedure, which can be handed over from the function \code{tsglm} by its \code{...} argument. Analogously, \code{loglin.fit} is the lower level fitting function for the model with the logarithmic link.
-Note that it is usually not necessary for a user to call these lower level functions nor to worry about the additional arguments provided by these functions. The defaults of these arguments have been chosen wisely by the authors of this package and should perform well in most applications.
+The function \code{mean.fit} is a lower level function to fit the mean specification of such a model assuming a Poisson distribution. It is called by \code{tsglm}. It has additional arguments allowing for a finer control of the fitting procedure, which can be handed over from the function \code{tsglm} by its \code{...} argument. Note that it is usually not necessary for a user to call this lower level functions nor to worry about the additional arguments provided by this function. The defaults of these arguments have been chosen wisely by the authors of this package and should perform well in most applications.
 }
 \usage{
 tsglm(ts, model = list(past_obs = NULL, past_mean = NULL,
             external = NULL), xreg = NULL, link = c("identity", "log"),
             distr = c("poisson", "nbinom"), ...)
 
-ingarch.fit(ts, model = list(past_obs = NULL, past_mean = NULL,
-            external = NULL), xreg = NULL, score = TRUE,
+mean.fit(ts, model, xreg, link, score = TRUE,
             info = c("score", "none", "hessian", "sandwich"),
             init.method=c("marginal", "iid", "firstobs", "zero"),
             init.drop = FALSE, epsilon = 1e-06, slackvar = 1e-06,
             start.control = list(), final.control = list(),
             inter.control = NULL)
-
-loglin.fit(ts, model = list(past_obs = NULL, past_mean = NULL,
-            external = NULL), xreg = NULL, score = TRUE,
-            info = c("score", "none"),
-            init.method=c("marginal", "iid", "firstobs", "zero"),
-            init.drop = FALSE, epsilon = 1e-06,  slackvar = 1e-06,
-            start.control = list(), final.control = list(),
-            inter.control = NULL) 
 }
 
 
@@ -66,13 +55,13 @@ loglin.fit(ts, model = list(past_obs = NULL, past_mean = NULL,
     character giving the conditional distribution. Default is \code{"poisson"}, i.e. a Poisson distribution.
   }
   \item{...}{
-    additional arguments to be passed to the lower level fitting functions \code{ingarch.fit} or \code{loglin.fit}. See below.  
+    additional arguments to be passed to the lower level fitting function \code{mean.fit}. See below.  
   }
   \item{score}{
     logical value indicating whether the score vector should be computed.
   }
   \item{info}{
-    character that determines if and how to compute the information matrix. Can be set to \code{"score"} (the default) for calculation via the outer product of the score vector, or to \code{"hessian"} for calculation via the Hessian matrix of second derivatives. For \code{info="sandwich"} the information matrix is estimated by a sandwich formula using both the outer score product and the Hessian matrix. If set to \code{"none"}, no information matrix is computed. For \code{link="log"} the alternatives \code{"hessian"} and \code{"sandwich"} are currently not available and will result in an error. For \code{distr="nbinom"} one can only use \code{info="score"}.
+    character that determines if and how to compute the information matrix. Can be set to \code{"score"} (the default) for calculation via the outer product of the score vector, or to \code{"hessian"} for calculation via the Hessian matrix of second derivatives. For \code{info="sandwich"} the information matrix is estimated by a sandwich formula using both the outer score product and the Hessian matrix. If set to \code{"none"}, no information matrix is computed. For \code{distr="nbinom"} one can only use \code{info="score"}.
   }
   \item{init.method}{
     character that determines how the recursion of the conditional mean (and possibly of its derivatives) is initialised. If set to \code{"marginal"} (the default), the marginal mean of a model without covariates and its derivatives are used. If set to \code{"iid"}, all values are initialised by the marginal mean under the assumption of i.i.d. data, which depends on the intercept only. If set to \code{"firstobs"} the first obersvation is used. If set to \code{"zero"}, the recursions are initialised by the value zero.
@@ -106,8 +95,8 @@ loglin.fit(ts, model = list(past_obs = NULL, past_mean = NULL,
     named list with optional elements that determine how to make the final maximum likelihood estimation. If \code{final.control=NULL}, only start estimates are computed and a list with fewer elements which has not the class \code{"tsglm"} is returned. Possible list elements of this argument are:
     \describe{  
       \item{\code{constrained}}{named list whose elements are passed to function \code{\link{constrOptim}} with possible elements \code{mu}, \code{outer.iterations} and \code{outer.eps} (see \code{\link{constrOptim}} for details). If \code{constrained=NULL}, an unconstrained optimisation is made with function \code{\link{optim}}. Note that this is likely to result in a fitted model which is non-stationary, which might cause further problems.}
-      \item{\code{optim.method}}{character which is passed to functions \code{\link{constrOptim}} or \code{\link{optim}} as argument \code{method}.}
-      \item{\code{optim.control}}{named list which is passed to function \code{\link{constrOptim}} or \code{\link{optim}} as the argument \code{control}. Must not contain the list element \code{fnscale}.}
+      \item{\code{optim.method}}{character which is passed to functions \code{\link{constrOptim}} or \code{\link{optim}} as argument \code{method}. The default is \code{"BFGS"}.}
+      \item{\code{optim.control}}{named list which is passed to function \code{\link{constrOptim}} or \code{\link{optim}} as the argument \code{control}. Must not contain the list element \code{fnscale}. The default is \code{list(maxit=20, reltol=1e-8)}.}
     }
   }
   \item{inter.control}{
@@ -224,6 +213,8 @@ Tobias Liboschik, Philipp Probst, Konstantinos Fokianos and Roland Fried
 \references{
 Christou, V. and Fokianos, K. (2014) Quasi-likelihood inference for negative binomial time series models. \emph{Journal of Time Series Analysis} \bold{35(1)}, 55--78, \url{http://dx.doi.org/10.1002/jtsa.12050}.
 
+Christou, V. and Fokianos, K. (2015) Estimation and testing linearity for non-linear mixed poisson autoregressions. \emph{Electronic Journal of Statistics} \bold{9}, 1357--1377, \url{http://dx.doi.org/10.1214/15-EJS1044}.
+
 Ferland, R., Latour, A. and Oraichi, D. (2006) Integer-valued GARCH process. \emph{Journal of Time Series Analysis} \bold{27(6)}, 923--942, \url{http://dx.doi.org/10.1111/j.1467-9892.2006.00496.x}.
 
 Fokianos, K. and Fried, R. (2010) Interventions in INGARCH processes. \emph{Journal of Time Series Analysis} \bold{31(3)}, 210--225, \url{http://dx.doi.org/10.1111/j.1467-9892.2010.00657.x}.
@@ -238,7 +229,7 @@ Liboschik, T., Kerschke, P., Fokianos, K. and Fried, R. (2014) Modelling interve
 }
 
 \seealso{
-S3 methods \code{\link{print}}, \code{\link[=summary.tsglm]{summary}}, \code{\link[=residuals.tsglm]{residuals}}, \code{\link[=plot.tsglm]{plot}}, \code{\link{fitted}}, \code{\link{coef}}, \code{\link[=predict.tsglm]{predict}}, \code{\link{logLik}}, \code{\link{vcov}}, \code{\link{AIC}} and \code{\link{BIC}} for the class \code{"tsglm"}.
+S3 methods \code{\link{print}}, \code{\link[=summary.tsglm]{summary}}, \code{\link[=residuals.tsglm]{residuals}}, \code{\link[=plot.tsglm]{plot}}, \code{\link{fitted}}, \code{\link{coef}}, \code{\link[=predict.tsglm]{predict}}, \code{\link{logLik}}, \code{\link{vcov}}, \code{\link{AIC}}, \code{\link{BIC}} and \code{\link[=QIC.tsglm]{QIC}} for the class \code{"tsglm"}.
 The S3 method \code{\link[=se.tsglm]{se}} computes the standard errors of the parameter estimates.
 Additionally, there are the S3 methods \code{\link[=pit.tsglm]{pit}}, \code{\link[=marcal.tsglm]{marcal}} and \code{\link[=scoring.tsglm]{scoring}} for predictive model assessment.
 
@@ -255,7 +246,7 @@ interventions <- interv_covariate(n=length(campy), tau=c(84, 100),
   delta=c(1, 0)) #detected by Fokianos and Fried (2010, 2012)
 #Linear link function with Negative Binomial distribution:
 campyfit <- tsglm(campy, model=list(past_obs=1, past_mean=13),
-  xreg=interventions, dist="nbinom")
+  xreg=interventions, distr="nbinom")
 campyfit
 plot(campyfit)
 
@@ -265,6 +256,6 @@ regressors <- cbind(PetrolPrice=Seatbelts[, c("PetrolPrice")],
                     linearTrend=seq(along=timeseries)/12)
 #Logarithmic link function with Poisson distribution:                    
 seatbeltsfit <- tsglm(ts=timeseries, link="log",
-  model=list(past_obs=c(1, 12)), xreg=regressors, distr="pois")
+  model=list(past_obs=c(1, 12)), xreg=regressors, distr="poisson")
 summary(seatbeltsfit)
 }

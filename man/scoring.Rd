@@ -1,21 +1,39 @@
-\name{scoring.tsglm}
-\alias{scoring.tsglm}
+\name{scoring}
 \alias{scoring}
+\alias{scoring.default}
+\alias{scoring.tsglm}
 \title{
-Predictive Model Assessment with Proper Scoring Rules for Time Series Following Generalised Linear Models
+Predictive Model Assessment with Proper Scoring Rules
 }
 \description{
-Computes scoring rules for the assessment of sharpness of a fitted GLM-type model for time series of counts.
+Computes scores for the assessment of sharpness of a fitted model for time series of counts.
 }
 \usage{
-\method{scoring}{tsglm}(object, cutoff=1000, ...)
+\method{scoring}{tsglm}(object, individual=FALSE, cutoff=1000, ...)
+\method{scoring}{default}(response, pred, distr=c("poisson", "nbinom"), distrcoefs,
+          individual=FALSE, cutoff=1000, ...)
 }
 \arguments{
   \item{object}{
 an object of class \code{"tsglm"}.
 }
+  \item{individual}{
+logical. If \code{FALSE} (the default) the average scores are returned. Otherwise a matrix with the individual scores for each observation is returned.
+}
   \item{cutoff}{
 positive integer. Summation over the infinite sample space \{0,1,2,...\} of a distribution is cut off at this value. This affects the quadratic, spherical and ranked probability score.
+}
+  \item{response}{
+integer vector. Vector of observed values \eqn{Y_1,...,Y_n}{Y[1],...,Y[n]}.
+}
+  \item{pred}{
+numeric vector. Vector of predicted values \eqn{\mu_{P_1},...,\mu_{P_n}}{\mu_P[1],...,\mu_P[n]}.
+}
+  \item{distr}{
+character giving the conditional distribution. Currently implemented are the Poisson (\code{"poisson"})and the Negative Binomial (\code{"nbinom"}) distribution.
+}
+  \item{distrcoefs}{
+numeric vector of additional coefficients specifying the conditional distribution. For \code{distr="poisson"} no additional parameters need to be provided. For \code{distr="nbinom"} the additional parameter \code{size} needs to be specified (e.g. by \code{distrcoefs=2}), see \code{\link{tsglm}} for details.
 }
   \item{...}{
 further arguments are currently ignored. Only for compatibility with generic function.
@@ -56,7 +74,7 @@ For more information on scoring rules see the references listed below.
 }
 
 \value{ 
-Returns a named vector of the following scoring rules:
+Returns a named vector of the mean scores (if argument \code{individual=FALSE}, the default) or a data frame of the individual scores for each observation (if argument \code{individual=TRUE}). The scoring rules are named as follows:
 
 \item{logarithmic}{Logarithmic score}
 
@@ -88,7 +106,9 @@ Philipp Probst and Tobias Liboschik
 \seealso{
 \code{\link{tsglm}} for fitting a GLM for time series of counts.
 
-\code{\link[=pit.tsglm]{pit}} and \code{\link[=marcal.tsglm]{marcal}} for other predictive model assessment tools for time series following GLMs.
+\code{\link{pit}} and \code{\link{marcal}} for other predictive model assessment tools.
+
+\code{\link[surveillance]{permutationTest}} in package \code{surveillance} for the Monte Carlo permutation test for paired individual scores by Paul and Held (2011, \emph{Statistics in Medicine} \bold{30}, 1118--1136, \url{http://dx.doi.org/10.1002/sim.4177}).
 }
 
 \examples{
