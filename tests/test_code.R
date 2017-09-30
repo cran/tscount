@@ -1,4 +1,4 @@
-#library(tscount)
+library(tscount)
 
 begin <- Sys.time()
 

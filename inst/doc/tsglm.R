@@ -1,5 +1,5 @@
 ### R code from vignette source 'tsglm.Rnw'
-### Encoding: ISO8859-1
+### Encoding: UTF-8
 
 ###################################################
 ### code chunk number 1: options
@@ -32,7 +32,7 @@ campyfit_nbin <- tsglm(campy, model = list(past_obs = 1, past_mean = 13),
 par(mfrow = c(2, 2), mar=c(3, 4, 2, 0.5), mgp=c(1.8, 0.6, 0))
 acf(residuals(campyfit_pois), main="", xlab="Lag (in years)")
 title(main = "ACF of response residuals")
-marcal(campyfit_pois, ylim = c(-0.03, 0.03), main = "Marginal calibration")
+marcal(campyfit_pois, main = "Marginal calibration")
   lines(marcal(campyfit_nbin, plot = FALSE), lty = "dashed")
   legend("bottomright", legend = c("Pois", "NegBin"), lwd=1,
          lty=c("solid", "dashed"))
@@ -44,7 +44,7 @@ pit(campyfit_nbin, ylim = c(0, 1.5), main = "PIT Negative Binomial")
 ### code chunk number 5: campy3b (eval = FALSE)
 ###################################################
 ## acf(residuals(campyfit_pois), main = "ACF of response residuals")
-## marcal(campyfit_pois, ylim = c(-0.03, 0.03), main = "Marginal calibration")
+## marcal(campyfit_pois, main = "Marginal calibration")
 ##   lines(marcal(campyfit_nbin, plot = FALSE), lty = "dashed")
 ##   legend("bottomright", legend = c("Pois", "NegBin"), lwd = 1,
 ##          lty = c("solid", "dashed"))
@@ -87,7 +87,8 @@ warningse[length(warningse)]
 ### code chunk number 11: seatbelts1
 ###################################################
 par(mar=c(3, 3, 0.5, 0.5), mgp=c(1.8, 0.6, 0))
-plot(Seatbelts[, "VanKilled"], ylab = "Number of casualties", type = "o", xaxt = "n", ylim = c(0, 18))
+plot(Seatbelts[, "VanKilled"], ylab = "Number of casualties", type = "o",
+     xaxt = "n", ylim = c(0, 18))
 axis(side = 1, at = 1969:1985)
 abline(v = 1983, col = "darkgrey", lwd=2)
 
@@ -153,11 +154,15 @@ predictions_1982 <- predict(seatbeltsfit, n.ahead = 12,
                             level = 0.9, global = TRUE,
                             B = 2000, newxreg = regressors_1982)
 plot(window(timeseries, end = 1982.917), type = "o",
-     xlim = c(1978.7, 1982.9), ylim = c(0, 20), ylab = "Number of casualities")
-lines(fitted(seatbeltsfit), col = "blue", lty = "dashed", lwd = 2)
-arrows(x0 = time(predictions_1982$interval), y0 = predictions_1982$interval[, "lower"], y1 = predictions_1982$interval[, "upper"], angle = 90, code = 3, length = 0.04, col = "darkgrey", lwd = 2)
+     xlim = c(1978.7, 1982.9), ylim = c(0, 20),
+     ylab = "Number of casualities")
+lines(fitted(seatbeltsfit), col = "black", lty = "longdash", lwd = 2)
+arrows(x0 = time(predictions_1982$interval),
+       y0 = predictions_1982$interval[, "lower"],
+       y1 = predictions_1982$interval[, "upper"],
+       angle = 90, code = 3, length = 0.04, col = "darkgrey", lwd = 2)
 points(timeseries_1982, pch = 16, type = "o") 
-lines(x = c(1981.917, time(predictions_1982$pred)), c(fitted(seatbeltsfit)[156], predictions_1982$pred), col = "red", lty = "solid", lwd = 2)
+lines(x = c(1981.917, time(predictions_1982$pred)), c(fitted(seatbeltsfit)[156], predictions_1982$pred), col = "black", lty = "solid", lwd = 2)
 
 
 ###################################################
@@ -199,12 +204,13 @@ campyfit_tsglm <- tsglm(campy, model = list(past_obs = 1, past_mean = 13),
 ### code chunk number 25: glm-function
 ###################################################
 campydata <- data.frame(ts = campy[-1], lag1 = campy[-length(campy)])
-coef(glm(ts ~ lag1, family = poisson(link = "identity"), data = campydata))
+coef(glm(ts ~ lag1, family = poisson(link = "identity"),
+         data = campydata))
 coef(tsglm(campy, model = list(past_obs = 1), link = "identity")) 
 
 
 ###################################################
-### code chunk number 26: gamlss-package
+### code chunk number 26: gamlss-package1
 ###################################################
 library("gamlss")
 gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata,
@@ -212,7 +218,14 @@ gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata,
 
 
 ###################################################
-### code chunk number 27: VGAM-package
+### code chunk number 27: gamlss-package2
+###################################################
+campyaic_variablesigma <- AIC(gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata, family = NBI(mu.link = "identity", sigma.link = "log")))
+campyaic_constantsigma <- AIC(gamlss(ts ~ lag1, data = campydata, family = NBI(mu.link = "identity")))
+
+
+###################################################
+### code chunk number 28: VGAM-package
 ###################################################
 library("VGAM")
 coef(vglm(ts ~ lag1, family = poissonff(link = "identitylink"),
@@ -220,7 +233,7 @@ coef(vglm(ts ~ lag1, family = poissonff(link = "identitylink"),
 
 
 ###################################################
-### code chunk number 28: acp-package
+### code chunk number 29: acp-package
 ###################################################
 library("acp")
 coef(acp(campy ~ -1, p = 1, q = 1))
@@ -228,7 +241,7 @@ coef(tsglm(campy, model = list(past_obs = 1, past_mean = 1)))
 
 
 ###################################################
-### code chunk number 29: glarma-package1
+### code chunk number 30: glarma-package1
 ###################################################
 library("glarma")
 glarmaModelEstimates(glarma(campy, phiLags = 1:3, thetaLags = 13,
@@ -237,7 +250,7 @@ glarmaModelEstimates(glarma(campy, phiLags = 1:3, thetaLags = 13,
 
 
 ###################################################
-### code chunk number 30: glarma-package2
+### code chunk number 31: glarma-package2
 ###################################################
 campyfit_glarma <- glarma(campy, phiLags = 1:3, thetaLags = 13, 
                           X = cbind(intercept=rep(1, length(campy))),
@@ -245,21 +258,28 @@ campyfit_glarma <- glarma(campy, phiLags = 1:3, thetaLags = 13,
 
 
 ###################################################
-### code chunk number 31: gamlss.util-package
+### code chunk number 32: gamlss.util-package
 ###################################################
 library("gamlss.util")
 coef(garmaFit(campy ~ 1, order = c(1, 1), family = NBI(mu.link = "log")))
 
 
 ###################################################
-### code chunk number 32: VGAM-package2
+### code chunk number 33: VGAM-package2
 ###################################################
-coef(vglm(campy ~ 1, family = garma(link="loge", p.ar.lag = 1, q.ma.lag = 0,
-                                    coefstart = c(0.1, 0.1))))
+coef(vglm(campy ~ 1, family = garma(link="loge", p.ar.lag = 1,
+                                q.ma.lag = 0, coefstart = c(0.1, 0.1))))
 
 
 ###################################################
-### code chunk number 33: INLA-package1a (eval = FALSE)
+### code chunk number 34: INLA-package-install (eval = FALSE)
+###################################################
+## #The INLA package is not available on CRAN and needs to installed from another repository if it is not yet available.
+## if(!require("INLA")) install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/testing")
+
+
+###################################################
+### code chunk number 35: INLA-package (eval = FALSE)
 ###################################################
 ## library("INLA")
 ## campyfit_INLA <- inla(ts ~ f(time, model = "rw1", cyclic = FALSE),
@@ -274,23 +294,24 @@ coef(vglm(campy ~ 1, family = garma(link="loge", p.ar.lag = 1, q.ma.lag = 0,
 
 
 ###################################################
-### code chunk number 34: INLA-package1b
+### code chunk number 36: INLA-package2 (eval = FALSE)
 ###################################################
-#campyest_INLA <- rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
-#mu <- rowMeans(sapply(posterior, function(x) exp(unname(x$latent[seq(along=campy), 1]))))
-#campyfitted_INLA <- mu*mean(campy)
-#save(campyest_INLA, campyfitted_INLA, file="INLA.RData")
+## mu <- rowMeans(sapply(posterior,
+##                       function(x) exp(unname(x$latent[seq(along=campy), 1]))))
+## campyfitted_INLA <- mu*mean(campy)
+
+
+###################################################
+### code chunk number 37: seatbelts3a
+###################################################
+#param_INLA <- rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
+#save(campyfitted_INLA, param_INLA, file="INLA.RData")
 load("INLA.RData")
+param_INLA
 
 
 ###################################################
-### code chunk number 35: INLA-package1c
-###################################################
-campyest_INLA
-
-
-###################################################
-### code chunk number 36: KFAS-package
+### code chunk number 38: KFAS-package
 ###################################################
 library("KFAS")
 model <- SSModel(campy ~ SSMcustom(Z = 1, T = 1, R = 1, Q = 0,
@@ -309,22 +330,22 @@ exp(campyfit_KFAS$optim.out$par)
 
 
 ###################################################
-### code chunk number 37: comparison-acf
+### code chunk number 39: comparison-acf
 ###################################################
-par(mar=c(3, 3, 0.5, 0.5), mgp=c(1.8, 0.6, 0))
+par(mar=c(3, 2.3, 0.5, 0.5), mgp=c(1.4, 0.5, 0))
 layout(matrix(1:4, ncol=2))
-acf(campy - fitted(campyfit_tsglm), main="")
+acf(campy - fitted(campyfit_tsglm), main="", ylim=c(-0.26,1))
 legend("top", bty="n", legend="", title="tsglm", cex=1.3) 
-acf(campy - fitted(campyfit_glarma), main="")
+acf(campy - fitted(campyfit_glarma), main="", ylim=c(-0.26,1))
 legend("top", bty="n", legend="", title="glarma", cex=1.3) 
-acf(campy - campyfitted_INLA, main="")
+acf(campy - campyfitted_INLA, main="", ylim=c(-0.26,1))
 legend("top", bty="n", legend="", title="INLA", cex=1.3)
-acf(campy - predict(campyfit_KFAS$model), main="")
+acf(campy - predict(campyfit_KFAS$model), main="", ylim=c(-0.26,1))
 legend("top", bty="n", legend="", title="KFAS", cex=1.3)
 
 
 ###################################################
-### code chunk number 38: comparison-fit
+### code chunk number 40: comparison-fit
 ###################################################
 par(mar=c(3, 3, 0.5, 0.5), mgp=c(1.8, 0.6, 0))
 plot(campy, type="p", xlim=c(1996, 2000.6), ylab="Number of cases", main="")
@@ -336,14 +357,14 @@ legend("topright", legend=c("tsglm", "glarma", "INLA", "KFAS"), lwd=2, lty=c("so
 
 
 ###################################################
-### code chunk number 39: gcmr-package-pre
+### code chunk number 41: gcmr-package-pre
 ###################################################
 width <- getOption("width")
 options(width=50)
 
 
 ###################################################
-### code chunk number 40: gcmr-package
+### code chunk number 42: gcmr-package
 ###################################################
 library("gcmr")
 gcmr(ts ~ 1, marginal = negbin.marg(link = "identity"),
@@ -351,13 +372,13 @@ gcmr(ts ~ 1, marginal = negbin.marg(link = "identity"),
 
 
 ###################################################
-### code chunk number 41: gcmr-package-post
+### code chunk number 43: gcmr-package-post
 ###################################################
 options(width=width)
 
 
 ###################################################
-### code chunk number 42: recursioninit
+### code chunk number 44: recursioninit
 ###################################################
 set.seed(1246)
 timser <- tsglm.sim(n=1000, param=list(intercept=0.5, past_obs=0.77, past_mean=0.22), model=list(past_obs=1, past_mean=1), link="identity")$ts
@@ -383,7 +404,7 @@ print(xtable(comparison, caption="Estimated parameters and log-likelihood of a t
 
 
 ###################################################
-### code chunk number 43: covariates_load
+### code chunk number 45: covariates_load
 ###################################################
 load("covariates.RData")
 estimates_list_id <- list(covariate_n100_id, covariate_n500_id, covariate_n1000_id, covariate_n2000_id)
@@ -391,7 +412,7 @@ estimates_list_log <- list(covariate_n100_log, covariate_n500_log, covariate_n10
 
 
 ###################################################
-### code chunk number 44: covariates_scatterplots
+### code chunk number 46: covariates_scatterplots
 ###################################################
 covariate_scatterplots <- function(x, main="", truevalue, show=1:12){
   #will only show the first eight types of covariates in vector 'show'
@@ -427,7 +448,7 @@ invisible(dev.off())
 
 
 ###################################################
-### code chunk number 45: covariates_boxplots
+### code chunk number 47: covariates_boxplots
 ###################################################
 covariate_boxplots <- function(estimates_list, index, truevalue, main="", label="", show=1:12){
   number_covariates <- length(show)
@@ -473,7 +494,7 @@ invisible(dev.off())
 
 
 ###################################################
-### code chunk number 46: covariates_qqplots
+### code chunk number 48: covariates_qqplots
 ###################################################
 covariate_qqplots <- function(x, main="", truevalue, show=1:12){
   #will only show the first eight types of covariates in vector 'show'
@@ -506,7 +527,7 @@ invisible(dev.off())
 
 
 ###################################################
-### code chunk number 47: distrcoef_load
+### code chunk number 49: distrcoef_load
 ###################################################
 load("distrcoef_size1.RData")
 estimates_distrcoef_size1_id <- sapply(list(distrcoef_n100_size1_id, distrcoef_n500_size1_id, distrcoef_n1000_size1_id, distrcoef_n2000_size1_id), function(x) x$estimates[4, ])
@@ -516,7 +537,7 @@ load("distrcoef_n200.RData")
 
 
 ###################################################
-### code chunk number 48: distrcoef_summary
+### code chunk number 50: distrcoef_summary
 ###################################################
 distrcoef_nu <- function(estimates) c(mean=mean(estimates, na.rm=TRUE), median=median(estimates, na.rm=TRUE), sd=sd(estimates, na.rm=TRUE), mad=mad(estimates, na.rm=TRUE), propNA=mean(is.na(estimates))*100)
 # distrcoef_id_summary <- rbind(
@@ -541,7 +562,7 @@ print(xtable(distrcoef_log_summary, caption="Summary statistics for the estimate
 
 
 ###################################################
-### code chunk number 49: distrcoef_boxplots
+### code chunk number 51: distrcoef_boxplots
 ###################################################
 ##RMSE:
 #apply(estimates_distrcoef_size1_id, 2, function(x) sqrt(mean((x-1)^2)))
@@ -555,5 +576,17 @@ mtext(text="Length of time series", side=2, line=2.5)
 boxplot(estimates_distrcoef_size1_log[, 4:1], horizontal=TRUE, main="Log-linear model", names=rev(c(100, 500, 1000, 2000)), ylab="Sample size", xlab=expression(hat(sigma)^2), cex=0.8, yaxt="n", ylim=c(0.5,2.5))
 abline(v=1, col="darkgrey")
 invisible(dev.off())
+
+
+###################################################
+### code chunk number 52: qic
+###################################################
+load("qic.RData")
+par(mar=c(3,3,2,1), mgp=c(1.8,0.5,0), mfrow=c(1,2))
+xylim <- c(375,465)
+plot(QIC ~ AIC, data=aicqic_id_n100, xlim=xylim, ylim=xylim, main="Linear model", cex=0.8)
+abline(a=0, b=1)
+plot(QIC ~ AIC, data=aicqic_log_n100, xlim=xylim, ylim=xylim, main="Log-linear model", cex=0.8)
+abline(a=0, b=1)
 
 

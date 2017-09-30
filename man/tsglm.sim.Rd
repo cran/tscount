@@ -70,6 +70,10 @@ If a previous model fit is given in argument \code{fit} and the length of the bu
 }
 }
 
+\references{
+Liboschik, T., Fokianos, K. and Fried, R. (201?) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software}, to appear. Available as a vignette: \code{vignette("tsglm", package="tscount")}.
+}
+
 \author{
 Tobias Liboschik and Philipp Probst
 }

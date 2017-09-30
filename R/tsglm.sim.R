@@ -58,7 +58,7 @@ tsglm.sim <- function(n, param=list(intercept=1, past_obs=NULL, past_mean=NULL, 
   model$external <- as.logical(model$external)
   if(any(is.na(model$external))) stop("Argument 'model$external' could not be coerced to logical")
   if(length(model$external)==0) model$external <- rep(FALSE, r) #by default covariate has internal effect
-  if(length(model$external)==1 && r!=1) rep(model$external, r) #if only one value is given this is used for all covariates
+  if(length(model$external)==1 && r!=1) model$external <- rep(model$external, r) #if only one value is given this is used for all covariates
   if(!missing(fit)){ #use information of previous model fit if provided:
     param <- list( #transform parameter vector to a list
       intercept=paramvec[1],
@@ -96,7 +96,7 @@ tsglm.sim <- function(n, param=list(intercept=1, past_obs=NULL, past_mean=NULL, 
   #Initialisation:
   if(n_start==0 & !missing(fit)){ #If simulation is based on a given fit and the length of the burn-in period is chosen to be 0, the the simulated observations are a direct continuation of the available observations.
     X_init <- fit$xreg[fit$n_obs-rev(Q_max)+1, , drop=FALSE]
-    nu_init <- fit$linear.predictors[fit$n_obs-rev(Q_max)+1]
+    nu_init <- fit$linear.predictors[fit$n_eff-rev(Q_max)+1]
     y_init <- fit$ts[fit$n_obs-rev(P_max)+1]
   }else{
     X_init <- matrix(0, nrow=q_max+n_start, ncol=r) #the covariates during the burn-in period are set to zero because no other values are available

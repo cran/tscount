@@ -60,7 +60,7 @@ predict.tsglm <- function(object, n.ahead=1, newobs=NULL, newxreg=NULL, level=0.
     estim <- match.arg(estim)
     if(estim %in% c("bootstrap", "normapprox") && method!="bootstrap") stop("Accounting for the estimation uncertainty is only available if argument 'method'\nis set to\"bootstrap\".")
     if(method=="conddistr"){
-      if(!conddistr_possible) stop("Computation of prediction intervals with argument 'method' set to \"bootstrap\"\ndoes only work for 1-step-ahead predictions. If argument 'n.ahead' is larger\nthan 1, future observations have to be provided in argument 'newobs'.") 
+      if(!conddistr_possible) stop("Computation of prediction intervals with argument 'method' set to \"conddistr\"\ndoes only work for 1-step-ahead predictions. If argument 'n.ahead' is larger\nthan 1, future observations have to be provided in argument 'newobs'.") 
       if(type %in% c("quantiles", "onesided")){  
         qdistr_mod <- function(p, meanvalue, distr=c("poisson", "nbinom"), distrcoefs, upper=FALSE){ #allows for alternative definition of the quantile
           result <- qdistr(p=p, meanvalue=meanvalue, distr=distr, distrcoefs=distrcoefs)

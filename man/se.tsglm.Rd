@@ -52,6 +52,10 @@ If the standard errors are computed by a parametric bootstrap procedure, the fol
 \item{B}{positive integer value giving the number of bootstrap samples used for estimation of the standard errors.}
 }
 
+\references{
+Liboschik, T., Fokianos, K. and Fried, R. (201?) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software}, to appear. Available as a vignette: \code{vignette("tsglm", package="tscount")}.
+}
+
 \author{
 Tobias Liboschik and Philipp Probst
 }

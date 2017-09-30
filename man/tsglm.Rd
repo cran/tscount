@@ -2,7 +2,7 @@
 \alias{tsglm}
 \alias{print.tsglm}
 \alias{logLik.tsglm}
-\alias{mean.fit}
+\alias{tsglm.meanfit}
 \alias{vcov.tsglm}
 \title{
 Count Time Series Following Generalised Linear Models
@@ -17,14 +17,14 @@ Estimation is done by conditional maximum likelihood for the Poisson distributio
 
 There is a vignette available which introduces the functionality of \code{tsglm} and related functions of this package and its underlying statistical methods (\code{vignette("tsglm", package="tscount")}).
 
-The function \code{mean.fit} is a lower level function to fit the mean specification of such a model assuming a Poisson distribution. It is called by \code{tsglm}. It has additional arguments allowing for a finer control of the fitting procedure, which can be handed over from the function \code{tsglm} by its \code{...} argument. Note that it is usually not necessary for a user to call this lower level functions nor to worry about the additional arguments provided by this function. The defaults of these arguments have been chosen wisely by the authors of this package and should perform well in most applications.
+The function \code{tsglm.meanfit} is a lower level function to fit the mean specification of such a model assuming a Poisson distribution. It is called by \code{tsglm}. It has additional arguments allowing for a finer control of the fitting procedure, which can be handed over from the function \code{tsglm} by its \code{...} argument. Note that it is usually not necessary for a user to call this lower level functions nor to worry about the additional arguments provided by this function. The defaults of these arguments have been chosen wisely by the authors of this package and should perform well in most applications.
 }
 \usage{
 tsglm(ts, model = list(past_obs = NULL, past_mean = NULL,
             external = NULL), xreg = NULL, link = c("identity", "log"),
             distr = c("poisson", "nbinom"), ...)
 
-mean.fit(ts, model, xreg, link, score = TRUE,
+tsglm.meanfit(ts, model, xreg, link, score = TRUE,
             info = c("score", "none", "hessian", "sandwich"),
             init.method=c("marginal", "iid", "firstobs", "zero"),
             init.drop = FALSE, epsilon = 1e-06, slackvar = 1e-06,
@@ -55,7 +55,7 @@ mean.fit(ts, model, xreg, link, score = TRUE,
     character giving the conditional distribution. Default is \code{"poisson"}, i.e. a Poisson distribution.
   }
   \item{...}{
-    additional arguments to be passed to the lower level fitting function \code{mean.fit}. See below.  
+    additional arguments to be passed to the lower level fitting function \code{tsglm.meanfit}. See below.  
   }
   \item{score}{
     logical value indicating whether the score vector should be computed.
@@ -194,7 +194,7 @@ An object of class \code{"tsglm"}, which is a list with at least the following e
   
   \item{sigmasq}{the estimated overdispersion coefficient. Is zero in case of a Poisson distribution.}
 
-The functions \code{ingarch.fit} and \code{loglin.fit} have the same output except the elements \code{distr}, \code{distrcoefs} and \code{sigmasq}. In addition, they return the following list elements:
+The function \code{tsglm.meanfit} has the same output except the elements \code{distr}, \code{distrcoefs} and \code{sigmasq}. In addition, they return the following list elements:
 
   \item{inter}{some details on the intermediate estimation of the coefficients as returned by \code{\link{constrOptim}} or \code{\link{optim}}.} 
 
@@ -225,7 +225,7 @@ Fokianos, K., Rahbek, A. and Tjostheim, D. (2009) Poisson autoregression. \emph{
 
 Fokianos, K. and Tjostheim, D. (2011) Log-linear Poisson autoregression. \emph{Journal of Multivariate Analysis} \bold{102(3)}, 563--578, \url{http://dx.doi.org/10.1016/j.jmva.2010.11.002}.
 
-Liboschik, T., Kerschke, P., Fokianos, K. and Fried, R. (2014) Modelling interventions in INGARCH processes. \emph{International Journal of Computer Mathematics} (published online), \url{http://dx.doi.org/10.1080/00207160.2014.949250}.
+Liboschik, T., Fokianos, K. and Fried, R. (201?) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software}, to appear. Available as a vignette: \code{vignette("tsglm", package="tscount")}.
 }
 
 \seealso{

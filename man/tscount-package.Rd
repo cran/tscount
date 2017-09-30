@@ -29,7 +29,11 @@ Fokianos, K., Rahbek, A. and Tjostheim, D. (2009) Poisson autoregression. \emph{
 
 Fokianos, K. and Tjostheim, D. (2011) Log-linear Poisson autoregression. \emph{Journal of Multivariate Analysis} \bold{102(3)}, 563--578, \url{http://dx.doi.org/10.1016/j.jmva.2010.11.002}.
 
-Liboschik, T., Kerschke, P., Fokianos, K. and Fried, R. (2014) Modelling interventions in INGARCH processes. \emph{International Journal of Computer Mathematics} (published online), \url{http://dx.doi.org/10.1080/00207160.2014.949250}.
+Liboschik, T. (2016) Modelling count time series following generalized linear models. \emph{PhD Thesis TU Dortmund University}, \url{http://dx.doi.org/10.17877/DE290R-17191}.
+
+Liboschik, T., Kerschke, P., Fokianos, K. and Fried, R. (2016) Modelling interventions in INGARCH processes. \emph{International Journal of Computer Mathematics} \bold{93(4)}, 640--657, \url{http://dx.doi.org/10.1080/00207160.2014.949250}.
+
+Liboschik, T., Fokianos, K. and Fried, R. (201?) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software}, to appear. Available as a vignette: \code{vignette("tsglm", package="tscount")}.
 }
 
 \keyword{Intervention detection}

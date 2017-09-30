@@ -1,0 +1,36 @@
+bibentry(
+    bibtype = "Article",
+    header = "As a general reference to the package please use:",
+    author =c(person("Tobias", "Liboschik"), person("Konstantinos", "Fokianos"), person("Roland", "Fried")),
+    title = "tscount: An R package for analysis of count time series following generalized linear models",
+    journal = "Journal of Statistical Software",
+    issn = "1548-7660",
+    year = "2016",
+    note = "to appear"
+)
+
+bibentry(
+    bibtype = "Article",
+    header = "To cite the functions interv_test(), interv_detect() and interv_multiple() please cite the above publication and additionally:",
+    author =c(person("Tobias", "Liboschik"), person("Pascal", "Kerschke"), person("Konstantinos", "Fokianos"), person("Roland", "Fried")),
+    title = "Modelling interventions in INGARCH processes",
+    journal = "International Journal of Computer Mathematics",
+    issn = "1548-7660",
+    year = "2016",
+    volume = "93",
+    number = "4",
+    pages = "640--657",
+    doi = "10.1080/00207160.2014.949250",
+    note = "preprint available at http://doi.org/10.17877/DE290R-4981"
+)
+
+{
+    softwareRef <- citation(auto = meta)
+    softwareRef$key <- "R:tscount"
+    softwareRef$header <- paste(
+"If you additionally want to cite this specific version of the package, use:")
+    softwareRef
+}
+
+citFooter("In general, the references given on the help pages",
+          "of the respective functions should be used.")

@@ -94,7 +94,9 @@ Fokianos, K. and Fried, R. (2010) Interventions in INGARCH processes. \emph{Jour
 
 Fokianos, K., and Fried, R. (2012) Interventions in log-linear Poisson autoregression. \emph{Statistical Modelling} \bold{12(4)}, 299--322. \url{http://dx.doi.org/10.1177/1471082X1201200401}.
 
-Liboschik, T., Kerschke, P., Fokianos, K. and Fried, R. (2014) Modelling interventions in INGARCH processes. \emph{International Journal of Computer Mathematics} (published online), \url{http://dx.doi.org/10.1080/00207160.2014.949250}.
+Liboschik, T. (2016) Modelling count time series following generalized linear models. \emph{PhD Thesis TU Dortmund University}, \url{http://dx.doi.org/10.17877/DE290R-17191}.
+
+Liboschik, T., Kerschke, P., Fokianos, K. and Fried, R. (2016) Modelling interventions in INGARCH processes. \emph{International Journal of Computer Mathematics} \bold{93(4)}, 640--657, \url{http://dx.doi.org/10.1080/00207160.2014.949250}.
 }
 
 \author{

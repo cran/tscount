@@ -52,7 +52,7 @@ sddistr <- function(meanvalue, distr=c("poisson", "nbinom"), distrcoefs){
 ardistr <- function(response, meanvalue, distr=c("poisson", "nbinom"), distrcoefs){
   result <- switch(distr,
     "poisson"=3/2*(response^(2/3)-meanvalue^(2/3))/meanvalue^(1/6),  
-    "nbinom"=(3*distrcoefs[["size"]]*((1+response/distrcoefs[[1]])^(2/3) - (1+meanvalue/distrcoefs[[1]])^(2/3)) + 3*(response^(2/3)-meanvalue^(2/3))) / (2*(meanvalue^2/distrcoefs[[1]] + meanvalue)^(1/6))
+    "nbinom"=(3/distrcoefs[["size"]]*((1+response*distrcoefs[[1]])^(2/3) - (1+meanvalue*distrcoefs[[1]])^(2/3)) + 3*(response^(2/3)-meanvalue^(2/3))) / (2*(meanvalue+meanvalue^2*distrcoefs[[1]])^(1/6))
   )  
   return(result)
 }
