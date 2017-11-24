@@ -1,12 +1,21 @@
-bibentry(
-    bibtype = "Article",
-    header = "As a general reference to the package please use:",
-    author =c(person("Tobias", "Liboschik"), person("Konstantinos", "Fokianos"), person("Roland", "Fried")),
-    title = "tscount: An R package for analysis of count time series following generalized linear models",
-    journal = "Journal of Statistical Software",
-    issn = "1548-7660",
-    year = "2016",
-    note = "to appear"
+bibentry(bibtype = "Article",
+  title        = "{tscount}: An {R} Package for Analysis of Count Time Series Following Generalized Linear Models",
+  author       = c(person(given = "Tobias",
+                          family = "Liboschik",
+                          email = "liboschik@statistik.tu-dortmund.de"),
+                   person(given = "Konstantinos",
+                          family = "Fokianos",
+                          email = "fokianos@ucy.ac.cy"),
+                   person(given = "Roland",
+                          family = "Fried",
+                          email = "fried@statistik.tu-dortmund.de")),
+  journal      = "Journal of Statistical Software",
+  year         = "2017",
+  volume       = "82",
+  number       = "5",
+  pages        = "1--51",
+  doi          = "10.18637/jss.v082.i05",
+  header       = "To cite tscount in publications use:"
 )
 
 bibentry(

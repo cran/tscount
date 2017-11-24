@@ -106,8 +106,8 @@ options(prompt="R> ", continue="+  ", width=76, useFancyQuotes=FALSE, digits=4)
 \advance\parboxwidth by -2\fboxsep
 \fbox{\parbox{\parboxwidth}{
 \small
-This document has been published as a vignette of the \proglang{R} package \pkg{tscount}. Last update: September~2017. An earlier version has been published as a discussion paper in February 2015 (\doi{10.17877/DE290R-7239}). A recent version has been conditionally accepted for publication in \emph{Journal of Statistical Software}. Please cite this manuscript as:\\[0.5em]
-Tobias Liboschik, Konstantinos Fokianos \& Roland Fried. ``tscount: An R Package for Analysis of Count Time Series Following Generalized Linear Models''. To appear in \emph{Journal of Statistical Software}.
+This document has been published as a vignette of the \proglang{R} package \pkg{tscount}. Last update: September~2017. An earlier version has been published as a discussion paper in February 2015 (\doi{10.17877/DE290R-7239}). A recent version has been published in \emph{Journal of Statistical Software}. Please cite this manuscript as:\\[0.5em]
+Liboschik, T., Fokianos, K. and Fried, R. (2017). tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software} \textbf{82(5)}, 1--51, \doi{10.18637/jss.v082.i05}.
 }}
 
 

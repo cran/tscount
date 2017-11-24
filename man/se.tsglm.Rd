@@ -53,7 +53,7 @@ If the standard errors are computed by a parametric bootstrap procedure, the fol
 }
 
 \references{
-Liboschik, T., Fokianos, K. and Fried, R. (201?) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software}, to appear. Available as a vignette: \code{vignette("tsglm", package="tscount")}.
+Liboschik, T., Fokianos, K. and Fried, R. (2017) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software} \bold{82(5)}, 1--51, \url{http://dx.doi.org/10.18637/jss.v082.i05}.
 }
 
 \author{

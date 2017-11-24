@@ -33,7 +33,7 @@ Liboschik, T. (2016) Modelling count time series following generalized linear mo
 
 Liboschik, T., Kerschke, P., Fokianos, K. and Fried, R. (2016) Modelling interventions in INGARCH processes. \emph{International Journal of Computer Mathematics} \bold{93(4)}, 640--657, \url{http://dx.doi.org/10.1080/00207160.2014.949250}.
 
-Liboschik, T., Fokianos, K. and Fried, R. (201?) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software}, to appear. Available as a vignette: \code{vignette("tsglm", package="tscount")}.
+Liboschik, T., Fokianos, K. and Fried, R. (2017) tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software} \bold{82(5)}, 1--51, \url{http://dx.doi.org/10.18637/jss.v082.i05}.
 }
 
 \keyword{Intervention detection}

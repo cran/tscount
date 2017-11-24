@@ -1,8 +1,8 @@
 Package: tscount
 Type: Package
 Title: Analysis of Count Time Series
-Version: 1.4.0
-Date: 2017-09-30
+Version: 1.4.1
+Date: 2017-11-24
 Authors@R: c(
   person("Tobias", "Liboschik", role=c("aut", "cre"), email="liboschik@statistik.tu-dortmund.de"),
   person("Roland", "Fried", role=c("aut"), email="fried@statistik.tu-dortmund.de"),
@@ -19,7 +19,7 @@ ByteCompile: true
 NeedsCompilation: no
 LazyData: true
 Encoding: UTF-8
-Packaged: 2017-09-30 10:57:19 UTC; tobias
+Packaged: 2017-11-24 21:22:19 UTC; tobias
 Author: Tobias Liboschik [aut, cre],
   Roland Fried [aut],
   Konstantinos Fokianos [aut],
@@ -27,4 +27,4 @@ Author: Tobias Liboschik [aut, cre],
   Jonathan Rathjens [ctb]
 Maintainer: Tobias Liboschik <liboschik@statistik.tu-dortmund.de>
 Repository: CRAN
-Date/Publication: 2017-09-30 14:46:28 UTC
+Date/Publication: 2017-11-24 23:23:22 UTC
