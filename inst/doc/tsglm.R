@@ -1,5 +1,4 @@
 ### R code from vignette source 'tsglm.Rnw'
-### Encoding: UTF-8
 
 ###################################################
 ### code chunk number 1: options

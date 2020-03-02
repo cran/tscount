@@ -1,4 +1,4 @@
-c69b75f91734b4d07a6396e92bec8c57 *DESCRIPTION
+88e666739147885818a84a2313028c4c *DESCRIPTION
 a920603f3c991bd0dbd9f3dedf21b297 *NAMESPACE
 d26455af935c66950ca3261cb7a7e20f *NEWS
 3c6785fd8ea502722510a195ad3279e5 *R/QIC.R
@@ -10,7 +10,7 @@ e6f425fdc48781dab4913e531fea48a9 *R/interv_covariate.R
 bec5bc86725052a8c34dc7f5128de0a0 *R/interv_detect.tsglm.R
 87ef4fef3d4d40a439ba0b3c6ce7e6a0 *R/interv_multiple.tsglm.R
 3637c174de2bef35adce28c4fafe6ad7 *R/interv_test.tsglm.R
-4af76d145614881934647313338d4e30 *R/invertinfo.R
+231315118de806db2529314aef1b6eef *R/invertinfo.R
 1258f77fff553d9d911b7f58681d9747 *R/linkfunctions.R
 fffeb5fe8fcc49cad572a3fb14af4716 *R/logLik.tsglm.R
 4157bb2212bbc1862aee1af1d9ff26bb *R/marcal.R
@@ -44,15 +44,16 @@ bbcdc38c493936de5316e778f5859be8 *R/tsglm.parameternames.R
 f640abe934d513028197c7eb62634902 *R/tsglm.sim.R
 3864ca9135cc43a729f624b199702342 *R/tsglm.startfit.R
 e731c0b2353632acc71d55a0fce8dc16 *R/vcov.tsglm.R
+29931a7dfe688d44a66b49a071e3fb52 *build/vignette.rds
 abe62b802adfe980ec0c2074b894d334 *data/campy.RData
 c1fb7be611f6f2c10b8af720888844f0 *data/ecoli.RData
 878b31b7029bf3faa9e8bed38914b716 *data/ehec.RData
 2b2a47764166791f7c0bf61d341a7b4b *data/influenza.RData
 0721e5cda5a8a197482c8edd7ad55688 *data/measles.RData
 ab2d7d785c0f7a5caf6709b63231c165 *inst/CITATION
-fa528caf8295cf53e194825629ef70b8 *inst/doc/tsglm.R
+cae877931f6021052b047a429f247be8 *inst/doc/tsglm.R
 870a511139fc4371e1beafafda90108c *inst/doc/tsglm.Rnw
-17f0bd68f6625b064f722b655e72bcea *inst/doc/tsglm.pdf
+ebc8316126ddb6e5616fa64cac0aff9a *inst/doc/tsglm.pdf
 094e42aba65e85d67a041a68f21fefd5 *man/QIC.Rd
 29d095c615686f09b1f0708dd568bc21 *man/campy.Rd
 ad5e4c752fb3aff6068209d7aa7a6220 *man/countdistr.Rd

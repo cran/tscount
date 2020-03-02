@@ -6,7 +6,7 @@ invertinfo <- function(mat, silent=TRUE, stopOnError=FALSE){
   }else{
     result <- list(vcov=matrix(NA, ncol=ncol(mat)), error_message=NULL)
     vcov <- try(chol2inv(chol(mat)), silent=silent)
-    if(class(vcov)=="try-error"){
+    if(inherits(vcov, "try-error")){
       result$error_message <- paste("Error in invertinfo(mat) : \n", vcov[[1]], sep="")
       result$vcov <- matrix(NA, nrow=nrow(mat), ncol=ncol(mat))
     }else{
