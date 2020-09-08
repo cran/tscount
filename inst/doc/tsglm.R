@@ -209,175 +209,13 @@ coef(tsglm(campy, model = list(past_obs = 1), link = "identity"))
 
 
 ###################################################
-### code chunk number 26: gamlss-package1
+### code chunk number 26: acp-package2
 ###################################################
-library("gamlss")
-gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata,
-       family = NBI(mu.link = "identity", sigma.link = "log"))[c(25, 43)]
-
-
-###################################################
-### code chunk number 27: gamlss-package2
-###################################################
-campyaic_variablesigma <- AIC(gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata, family = NBI(mu.link = "identity", sigma.link = "log")))
-campyaic_constantsigma <- AIC(gamlss(ts ~ lag1, data = campydata, family = NBI(mu.link = "identity")))
-
-
-###################################################
-### code chunk number 28: VGAM-package
-###################################################
-library("VGAM")
-coef(vglm(ts ~ lag1, family = poissonff(link = "identitylink"),
-          data = campydata))
-
-
-###################################################
-### code chunk number 29: acp-package
-###################################################
-library("acp")
-coef(acp(campy ~ -1, p = 1, q = 1))
 coef(tsglm(campy, model = list(past_obs = 1, past_mean = 1)))
 
 
 ###################################################
-### code chunk number 30: glarma-package1
-###################################################
-library("glarma")
-glarmaModelEstimates(glarma(campy, phiLags = 1:3, thetaLags = 13,
-    residuals = "Pearson", X = cbind(intercept=rep(1, length(campy))),
-    type = "NegBin"))[c("Estimate", "Std.Error")]
-
-
-###################################################
-### code chunk number 31: glarma-package2
-###################################################
-campyfit_glarma <- glarma(campy, phiLags = 1:3, thetaLags = 13, 
-                          X = cbind(intercept=rep(1, length(campy))),
-                          type = "NegBin", residuals = "Pearson")
-
-
-###################################################
-### code chunk number 32: gamlss.util-package
-###################################################
-library("gamlss.util")
-coef(garmaFit(campy ~ 1, order = c(1, 1), family = NBI(mu.link = "log")))
-
-
-###################################################
-### code chunk number 33: VGAM-package2
-###################################################
-coef(vglm(campy ~ 1, family = garma(link="loge", p.ar.lag = 1,
-                                q.ma.lag = 0, coefstart = c(0.1, 0.1))))
-
-
-###################################################
-### code chunk number 34: INLA-package-install (eval = FALSE)
-###################################################
-## #The INLA package is not available on CRAN and needs to installed from another repository if it is not yet available.
-## if(!require("INLA")) install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/testing")
-
-
-###################################################
-### code chunk number 35: INLA-package (eval = FALSE)
-###################################################
-## library("INLA")
-## campyfit_INLA <- inla(ts ~ f(time, model = "rw1", cyclic = FALSE),
-##                 data = data.frame(time = seq(along = campy), ts = campy),
-##                 family = "nbinomial", E = mean(campy),
-##                 control.predictor = list(compute = TRUE, link = 1),
-##                 control.compute = list(cpo = FALSE, config = TRUE),
-##                 control.inla = list(int.strategy = "grid", dz = 1,
-##                                     diff.logdens = 10))
-## posterior <- inla.posterior.sample(1000, campyfit_INLA)
-## rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
-
-
-###################################################
-### code chunk number 36: INLA-package2 (eval = FALSE)
-###################################################
-## mu <- rowMeans(sapply(posterior,
-##                       function(x) exp(unname(x$latent[seq(along=campy), 1]))))
-## campyfitted_INLA <- mu*mean(campy)
-
-
-###################################################
-### code chunk number 37: seatbelts3a
-###################################################
-#param_INLA <- rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
-#save(campyfitted_INLA, param_INLA, file="INLA.RData")
-load("INLA.RData")
-param_INLA
-
-
-###################################################
-### code chunk number 38: KFAS-package
-###################################################
-library("KFAS")
-model <- SSModel(campy ~ SSMcustom(Z = 1, T = 1, R = 1, Q = 0,
-                                   a1 = NA, P1 = NA) - 1, 
-                 distribution = "negative binomial", u = NA)
-updatefn <- function(pars, model, ...){
-  model$a1[1, 1] <- pars[1]
-  model$u[, 1] <- exp(pars[2])
-  model$P1[1, 1] <- exp(pars[3])
-  model$Q[1,1,1] <- exp(pars[4])
-  return(model)
-}
-campyfit_KFAS <- fitSSM(model = model, inits = c(mean(campy), 0, 0, 0),
-                updatefn = updatefn)
-exp(campyfit_KFAS$optim.out$par)
-
-
-###################################################
-### code chunk number 39: comparison-acf
-###################################################
-par(mar=c(3, 2.3, 0.5, 0.5), mgp=c(1.4, 0.5, 0))
-layout(matrix(1:4, ncol=2))
-acf(campy - fitted(campyfit_tsglm), main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="tsglm", cex=1.3) 
-acf(campy - fitted(campyfit_glarma), main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="glarma", cex=1.3) 
-acf(campy - campyfitted_INLA, main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="INLA", cex=1.3)
-acf(campy - predict(campyfit_KFAS$model), main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="KFAS", cex=1.3)
-
-
-###################################################
-### code chunk number 40: comparison-fit
-###################################################
-par(mar=c(3, 3, 0.5, 0.5), mgp=c(1.8, 0.6, 0))
-plot(campy, type="p", xlim=c(1996, 2000.6), ylab="Number of cases", main="")
-lines(fitted(campyfit_tsglm), lwd=2, lty="solid")
-lines(as.numeric(time(campy)), fitted(campyfit_glarma), lwd=2, lty="dashed", col="darkorange")
-lines(as.numeric(time(campy)), campyfitted_INLA, lwd=2, lty="longdash", col="blue")
-lines(as.numeric(time(campy)), predict(campyfit_KFAS$model), lwd=2, lty="dotdash", col="red")
-legend("topright", legend=c("tsglm", "glarma", "INLA", "KFAS"), lwd=2, lty=c("solid", "dashed", "longdash", "dotdash"), col=c("black", "darkorange", "blue", "red"), seg.len=5)
-
-
-###################################################
-### code chunk number 41: gcmr-package-pre
-###################################################
-width <- getOption("width")
-options(width=50)
-
-
-###################################################
-### code chunk number 42: gcmr-package
-###################################################
-library("gcmr")
-gcmr(ts ~ 1, marginal = negbin.marg(link = "identity"),
-     cormat = arma.cormat(p=1, q=1), data = data.frame(ts = campy))
-
-
-###################################################
-### code chunk number 43: gcmr-package-post
-###################################################
-options(width=width)
-
-
-###################################################
-### code chunk number 44: recursioninit
+### code chunk number 27: recursioninit
 ###################################################
 set.seed(1246)
 timser <- tsglm.sim(n=1000, param=list(intercept=0.5, past_obs=0.77, past_mean=0.22), model=list(past_obs=1, past_mean=1), link="identity")$ts
@@ -403,7 +241,7 @@ print(xtable(comparison, caption="Estimated parameters and log-likelihood of a t
 
 
 ###################################################
-### code chunk number 45: covariates_load
+### code chunk number 28: covariates_load
 ###################################################
 load("covariates.RData")
 estimates_list_id <- list(covariate_n100_id, covariate_n500_id, covariate_n1000_id, covariate_n2000_id)
@@ -411,7 +249,7 @@ estimates_list_log <- list(covariate_n100_log, covariate_n500_log, covariate_n10
 
 
 ###################################################
-### code chunk number 46: covariates_scatterplots
+### code chunk number 29: covariates_scatterplots
 ###################################################
 covariate_scatterplots <- function(x, main="", truevalue, show=1:12){
   #will only show the first eight types of covariates in vector 'show'
@@ -447,7 +285,7 @@ invisible(dev.off())
 
 
 ###################################################
-### code chunk number 47: covariates_boxplots
+### code chunk number 30: covariates_boxplots
 ###################################################
 covariate_boxplots <- function(estimates_list, index, truevalue, main="", label="", show=1:12){
   number_covariates <- length(show)
@@ -493,7 +331,7 @@ invisible(dev.off())
 
 
 ###################################################
-### code chunk number 48: covariates_qqplots
+### code chunk number 31: covariates_qqplots
 ###################################################
 covariate_qqplots <- function(x, main="", truevalue, show=1:12){
   #will only show the first eight types of covariates in vector 'show'
@@ -526,7 +364,7 @@ invisible(dev.off())
 
 
 ###################################################
-### code chunk number 49: distrcoef_load
+### code chunk number 32: distrcoef_load
 ###################################################
 load("distrcoef_size1.RData")
 estimates_distrcoef_size1_id <- sapply(list(distrcoef_n100_size1_id, distrcoef_n500_size1_id, distrcoef_n1000_size1_id, distrcoef_n2000_size1_id), function(x) x$estimates[4, ])
@@ -536,7 +374,7 @@ load("distrcoef_n200.RData")
 
 
 ###################################################
-### code chunk number 50: distrcoef_summary
+### code chunk number 33: distrcoef_summary
 ###################################################
 distrcoef_nu <- function(estimates) c(mean=mean(estimates, na.rm=TRUE), median=median(estimates, na.rm=TRUE), sd=sd(estimates, na.rm=TRUE), mad=mad(estimates, na.rm=TRUE), propNA=mean(is.na(estimates))*100)
 # distrcoef_id_summary <- rbind(
@@ -561,7 +399,7 @@ print(xtable(distrcoef_log_summary, caption="Summary statistics for the estimate
 
 
 ###################################################
-### code chunk number 51: distrcoef_boxplots
+### code chunk number 34: distrcoef_boxplots
 ###################################################
 ##RMSE:
 #apply(estimates_distrcoef_size1_id, 2, function(x) sqrt(mean((x-1)^2)))
@@ -578,7 +416,7 @@ invisible(dev.off())
 
 
 ###################################################
-### code chunk number 52: qic
+### code chunk number 35: qic
 ###################################################
 load("qic.RData")
 par(mar=c(3,3,2,1), mgp=c(1.8,0.5,0), mfrow=c(1,2))

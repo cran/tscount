@@ -106,7 +106,7 @@ options(prompt="R> ", continue="+  ", width=76, useFancyQuotes=FALSE, digits=4)
 \advance\parboxwidth by -2\fboxsep
 \fbox{\parbox{\parboxwidth}{
 \small
-This document has been published as a vignette of the \proglang{R} package \pkg{tscount}. Last update: September~2017. An earlier version has been published as a discussion paper in February 2015 (\doi{10.17877/DE290R-7239}). A recent version has been published in \emph{Journal of Statistical Software}. Please cite this manuscript as:\\[0.5em]
+This document is published as a vignette of the \proglang{R} package \pkg{tscount} with minor updates since its publication in \emph{Journal of Statistical Software}. Its first version has been published as a discussion paper in February 2015 (\doi{10.17877/DE290R-7239}). Please cite this manuscript as:\\[0.5em]
 Liboschik, T., Fokianos, K. and Fried, R. (2017). tscount: An R package for analysis of count time series following generalized linear models. \emph{Journal of Statistical Software} \textbf{82(5)}, 1--51, \doi{10.18637/jss.v082.i05}.
 }}
 
@@ -816,16 +816,41 @@ In the following example we use the package \pkg{gamlss} \citep[authored by][]{r
 \begin{align*}
 \sigma^2_t = \exp\left( \beta_0^* + \beta_1^* \log(Y_{t-1}+1) \right).
 \end{align*}
-<<gamlss-package1>>=
-library("gamlss")
-gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata,
-       family = NBI(mu.link = "identity", sigma.link = "log"))[c(25, 43)]
-@
-<<gamlss-package2, echo=FALSE, results=hide>>=
-campyaic_variablesigma <- AIC(gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata, family = NBI(mu.link = "identity", sigma.link = "log")))
-campyaic_constantsigma <- AIC(gamlss(ts ~ lag1, data = campydata, family = NBI(mu.link = "identity")))
-@
-The possibility of a time dependent dispersion coefficient does not improve the fit for this data example (according to the AIC, which is \Sexpr{round(campyaic_variablesigma,2)} compared to \Sexpr{round(campyaic_constantsigma,2)} for a model with constant overdispersion coefficient) but might be quite useful for other data examples. However, it is clear that such a complex model yields more uncertainty of the parameter estimations (i.e., larger standard errors, which are not shown here).
+% <<gamlss-package1>>=
+% library("gamlss")
+% gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata,
+%        family = NBI(mu.link = "identity", sigma.link = "log"))[c(25, 43)]
+% @
+% <<gamlss-package2, echo=FALSE, results=hide>>=
+% campyaic_variablesigma <- AIC(gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata, family = NBI(mu.link = "identity", sigma.link = "log")))
+% campyaic_constantsigma <- AIC(gamlss(ts ~ lag1, data = campydata, family = NBI(mu.link = "identity")))
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("gamlss")
+R> gamlss(ts ~ lag1, sigma.formula = ~ log(lag1+1), data = campydata,
++         family = NBI(mu.link = "identity", sigma.link = "log"))[c(25, 43)]
+\end{Sinput}
+\begin{Soutput}
+GAMLSS-RS iteration 1: Global Deviance = 803.7 
+GAMLSS-RS iteration 2: Global Deviance = 803.7 
+GAMLSS-RS iteration 3: Global Deviance = 803.7 
+$mu.coefficients
+(Intercept)        lag1 
+     3.8409      0.6768 
+
+$sigma.coefficients
+  (Intercept) log(lag1 + 1) 
+      -4.2986        0.7167 
+\end{Soutput}
+\end{Schunk}
+The possibility of a time dependent dispersion coefficient does not improve the fit for this data example (according to the AIC, which is
+% \Sexpr{#round(campyaic_variablesigma,2)}
+811.72
+compared to
+% \Sexpr{#round(campyaic_constantsigma,2)}
+811.64
+for a model with constant overdispersion coefficient) but might be quite useful for other data examples. However, it is clear that such a complex model yields more uncertainty of the parameter estimations (i.e., larger standard errors, which are not shown here).
 
 %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %
 
@@ -852,11 +877,22 @@ where $\nu_j=\boldsymbol{\eta}_j^\top\boldsymbol{X}_t$, $j=1,\dots,s$ and $h(\cd
 Choosing $d=s=1$ results in the special case of an ordinary, univariate GLM.
 %The VGLM has been introduced for independent observations but can be employed for dependent time series data by including past observations as covariates like it is described at the beginning of this section for ordinary GLMs. Naturally, this has the same problems and limitations which have been discussed in that context.
 We demonstrate a fit of an INGARCH(1,0) model to the Campylobacterosis data by the following code:
-<<VGAM-package>>=
-library("VGAM")
-coef(vglm(ts ~ lag1, family = poissonff(link = "identitylink"),
-          data = campydata))
-@
+% <<VGAM-package>>=
+% library("VGAM")
+% coef(vglm(ts ~ lag1, family = poissonff(link = "identitylink"),
+%           data = campydata))
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("VGAM")
+R> coef(vglm(ts ~ lag1, family = poissonff(link = "identitylink"),
++            data = campydata))
+\end{Sinput}
+\begin{Soutput}
+(Intercept)        lag1 
+     4.0322      0.6556 
+\end{Soutput}
+\end{Schunk}
 We note that the function \code{vglm} produces exactly the same output as the function \code{glm} for this special case.
 The function \code{vgam} from the same package would allow to fit an even more general vector generalized additive model (VGAM), which is a multivariate generalization of a generalized additive model (GAM), see \citet{yee_vector_2015} for more details.
 
@@ -883,9 +919,20 @@ The package \pkg{acp} \citep{siakoulis_acp:_2015} has been published recently an
 \item The \code{tsglm} function differentiates between covariates with so-called external and internal effect (see Equation~\eqref{eq:linpredextint} and the accompanying discussion).
 \end{itemize}
 In the following example, an INGARCH(1,1) model (ignoring the seasonal effect) is fitted to the Campylobacterosis data analyzed in Section~\ref{sec:campy}:
-<<acp-package>>=
-library("acp")
-coef(acp(campy ~ -1, p = 1, q = 1))
+%v<<acp-package>>=
+% library("acp")
+% coef(acp(campy ~ -1, p = 1, q = 1))
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("acp")
+R> coef(acp(campy ~ -1, p = 1, q = 1))
+\end{Sinput}
+\begin{Soutput}
+[1] 2.5320 0.5562 0.2295
+\end{Soutput}
+\end{Schunk}
+<<acp-package2>>=
 coef(tsglm(campy, model = list(past_obs = 1, past_mean = 1)))
 @
 The parameter estimations obtained by the \code{acp} function are very similar to those obtained by the \code{tsglm} function when fitting the same model.
@@ -907,22 +954,57 @@ The formulation of the GLARMA model we consider describes the modeling possibili
 Unlike ordinary ARMA models, GLARMA models are not driven by random innovations but by residuals $e_t$.
 Note that the model fitted by the function \code{tsglm} is also related to ARMA processes, see \eqref{eq:armarepr} in the Appendix.
 The function \code{glarma} implements maximum likelihood fitting of a GLARMA model. We compare the following model fitted to the Campylobacterosis data by the function \code{glarma} with a fit by \code{tsglm} (see Section~\ref{sec:campy}, but without the intervention effects):
-<<glarma-package1>>=
-library("glarma")
-glarmaModelEstimates(glarma(campy, phiLags = 1:3, thetaLags = 13,
-    residuals = "Pearson", X = cbind(intercept=rep(1, length(campy))),
-    type = "NegBin"))[c("Estimate", "Std.Error")]
-@
-%
-<<glarma-package2, include=FALSE, echo=FALSE, results=hide>>=
-campyfit_glarma <- glarma(campy, phiLags = 1:3, thetaLags = 13, 
-                          X = cbind(intercept=rep(1, length(campy))),
-                          type = "NegBin", residuals = "Pearson")
-@
-With the notation introduced above the fitted model for the number of new infections $Y_t$ in time period $t$ is given by $Y_t|{\cal F}_{t-1} \sim \text{NegBin}(\lambda_t,\Sexpr{round(campyfit_glarma$delta[["alpha"]],2)})$ with $\log(\lambda_t) = \Sexpr{round(campyfit_glarma$delta[["intercept"]],2)} + Z_t$
+% <<glarma-package1>>=
+% library("glarma")
+% glarmaModelEstimates(glarma(campy, phiLags = 1:3, thetaLags = 13,
+%     residuals = "Pearson", X = cbind(intercept=rep(1, length(campy))),
+%     type = "NegBin"))[c("Estimate", "Std.Error")]
+% @
+% %
+% <<glarma-package2, include=FALSE, echo=FALSE, results=hide>>=
+% campyfit_glarma <- glarma(campy, phiLags = 1:3, thetaLags = 13, 
+%                           X = cbind(intercept=rep(1, length(campy))),
+%                           type = "NegBin", residuals = "Pearson")
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("glarma")
+R> glarmaModelEstimates(glarma(campy, phiLags = 1:3, thetaLags = 13,
++      residuals = "Pearson", X = cbind(intercept=rep(1, length(campy))),
++      type = "NegBin"))[c("Estimate", "Std.Error")]
+\end{Sinput}
+\begin{Soutput}
+          Estimate Std.Error
+intercept  2.34110   0.10757
+phi_1      0.22101   0.03940
+phi_2      0.05978   0.04555
+phi_3      0.09784   0.04298
+theta_13   0.08602   0.03736
+alpha     10.50823   1.91232
+\end{Soutput}
+\end{Schunk}
+With the notation introduced above the fitted model for the number of new infections $Y_t$ in time period $t$ is given by $Y_t|{\cal F}_{t-1} \sim \text{NegBin}(\lambda_t,
+%\Sexpr{#round(campyfit_glarma$delta[["alpha"]],2)}
+10.51
+)$ with $\log(\lambda_t) = 
+% \Sexpr{#round(campyfit_glarma$delta[["intercept"]],2)}
+2.34
++ Z_t$
 and
 \begin{align*}
-Z_t = \Sexpr{round(campyfit_glarma$delta[["phi_1"]],2)} (Z_{t-1} + e_{t-1}) + \Sexpr{round(campyfit_glarma$delta[["phi_2"]],2)} (Z_{t-2} + e_{t-2}) + \Sexpr{round(campyfit_glarma$delta[["phi_3"]],2)} (Z_{t-3} + e_{t-3}) + \Sexpr{round(campyfit_glarma$delta[["theta_13"]],2)} e_{t-13}.
+Z_t = 
+% \Sexpr{#round(campyfit_glarma$delta[["phi_1"]],2)}
+0.22
+(Z_{t-1} + e_{t-1}) + 
+% \Sexpr{#round(campyfit_glarma$delta[["phi_2"]],2)}
+0.06
+(Z_{t-2} + e_{t-2}) + 
+% \Sexpr{#round(campyfit_glarma$delta[["phi_3"]],2)}
+0.1
+(Z_{t-3} + e_{t-3}) + 
+% \Sexpr{#round(campyfit_glarma$delta[["theta_13"]],2)}
+0.09
+e_{t-13}.
 \end{align*}
 We focus on the models' capability to explain the serial correlation which is present in the data. Considering the GLARMA model, a choice of $P=\{1,2,3\}$ and $Q=\{13\}$ leaves approximately uncorrelated residuals (see the autocorrelation function in Figure~\ref{fig:comparison-acf} (top right)). For the model class fitted by our function \code{tsglm} we have chosen the more parsimonious model with $P=\{1\}$ and $Q=\{13\}$ to obtain a fit with approximately uncorrelated residuals. 
 Figure~\ref{fig:comparison-fit} shows that both models seem to provide an adequate fit to given data. 
@@ -940,16 +1022,43 @@ g(\lambda_t) = \boldsymbol{\eta}^\top\boldsymbol{X}_t +
 where the notation follows the GLARMA notation.
 Compared to the GLARMA model, the GARMA model does not include an offset and the ARMA structure applies to values which are transformed by the link function $g$, i.e., on the scale of the linear predictor. In case of a logarithmic link, the observations $Y_t$ are replaced by $\max(Y_t,c)$ for a threshold $c\in(0,1)$, such that $g(Y_t)$ is well-defined. In our package this problem is handled replacing $Y_t$ by $Y_t+1$.
 The package \pkg{gamlss.util} \citep{stasinopoulos_gamlss.util:_2015} contains the function \code{garmaFit} for fitting such GARMA models. Like ordinary GLMs, these models are fitted by maximum likelihood employing the IRLS algorithm. As pointed out on the accompanying help page, the function \code{garmaFit} does not guarantee stationarity of the fitted model. Additionally, the function \code{garmaFit} does not allow to specify serial dependence of higher order without including all lower orders, which would be necessary for parsimoniously describing stochastic seasonality. The following example shows a fit of a Negative Binomial GARMA model of order $p=1$ and $q=1$ with link $g(\cdot)=\log(\cdot)$ to the Campybacterosis data:
-<<gamlss.util-package>>=
-library("gamlss.util")
-coef(garmaFit(campy ~ 1, order = c(1, 1), family = NBI(mu.link = "log")))
-@
+% <<gamlss.util-package>>=
+% library("gamlss.util")
+% coef(garmaFit(campy ~ 1, order = c(1, 1), family = NBI(mu.link = "log")))
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("gamlss.util")
+R> coef(garmaFit(campy ~ 1, order = c(1, 1), family = NBI(mu.link = "log")))
+\end{Sinput}
+\begin{Soutput}
+deviance of linear model=  891.1
+deviance of  garma model=  803.3
+beta.(Intercept)             phi            theta
+          2.6216          0.7763          -0.2917
+\end{Soutput}
+\end{Schunk}\begin{verbatim}
+deviance of linear model=  891.1
+deviance of  garma model=  803.3
+beta.(Intercept)             phi            theta
+          2.6216          0.7763          -0.2917
+\end{verbatim}
 In the above output the AR coefficient $\phi_1$ is named \code{phi} and the MA coefficient $\psi_1$ \code{theta}.
 The function \code{garma} from the package \pkg{VGAM} \citep{yee_vgam:_2016} is an alternative implementation for fitting GARMA models. However, the accompanying help page warns that this function is still in premature stage and points to potential problems with the initialization (in version 1.0-1 of the package). In addition, \code{garma} allows only for autoregressive modeling (i.e. $q=0$) and the Negative Binomial distribution is not supported. Hence our example can only show a fit of a Poisson GARMA model of order $p=1$ and $q=0$ to the Campylobacterosis data:
-<<VGAM-package2>>=
-coef(vglm(campy ~ 1, family = garma(link="loge", p.ar.lag = 1,
-                                q.ma.lag = 0, coefstart = c(0.1, 0.1))))
-@
+% <<VGAM-package2>>=
+% coef(vglm(campy ~ 1, family = garma(link="loge", p.ar.lag = 1,
+%                                q.ma.lag = 0, coefstart = c(0.1, 0.1))))
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> coef(vglm(campy ~ 1, family = garma(link="loge", p.ar.lag = 1,
++                                  q.ma.lag = 0, coefstart = c(0.1, 0.1))))
+\end{Sinput}
+\begin{Soutput}
+(Intercept)      (lag1) 
+   55952455   -71039968 
+\end{Soutput}
+\end{Schunk}
 In this example the estimated coefficient for the autoregressive term is larger than one, which suggests that the fitted process is not stationary.
 We could not find settings for which the functions \code{garmaFit} and \code{garma} fit the same model and give identical or at least similar results.
 Due to the close relationship of GARMA and GLARMA models we refrain from presenting a comparison to a fit with our package and refer to the comparison in the previous paragraph made for GLARMA models.
@@ -978,33 +1087,52 @@ The time-varying intercept $\beta_{0,t}$ is assumed to depend on its previous va
 \end{align*}
 for $d=1,2,3$, respectively. For $d>0$ this induces dependence between successive observations. The other parameters, $\delta$ for the linear trend, $\gamma_t$ for a seasonal effect, and the vector $\boldsymbol{\eta}$ for the effect of a covariate vector $\boldsymbol{X}_t$, are also assumed to be normally distributed with certain priors. Inference is done in a Bayesian framework and utilizes an efficient integrated nested Laplace approximation (INLA) provided by the package \pkg{INLA} \citep{lindgren_bayesian_2015} (available from \url{http://www.r-inla.org}).
 In the following example we fit a Negative Binomial model without trend, seasonality or covariate effects but with a time-varying intercept of order $d=1$ to the Campylobacterosis data:
-<<INLA-package-install, include=FALSE, echo=FALSE, results=hide, eval=FALSE>>=
-#The INLA package is not available on CRAN and needs to installed from another repository if it is not yet available.
-if(!require("INLA")) install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/testing")
-@
-<<INLA-package, eval=FALSE>>=
-library("INLA")
-campyfit_INLA <- inla(ts ~ f(time, model = "rw1", cyclic = FALSE),
-                data = data.frame(time = seq(along = campy), ts = campy),
-                family = "nbinomial", E = mean(campy),
-                control.predictor = list(compute = TRUE, link = 1),
-                control.compute = list(cpo = FALSE, config = TRUE),
-                control.inla = list(int.strategy = "grid", dz = 1,
-                                    diff.logdens = 10))
-posterior <- inla.posterior.sample(1000, campyfit_INLA)
-rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
-@
-<<INLA-package2, include=FALSE, echo=FALSE, results=hide, eval=FALSE>>=
-mu <- rowMeans(sapply(posterior,
-                      function(x) exp(unname(x$latent[seq(along=campy), 1]))))
-campyfitted_INLA <- mu*mean(campy)
-@
-<<seatbelts3a, echo=FALSE>>=
-#param_INLA <- rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
-#save(campyfitted_INLA, param_INLA, file="INLA.RData")
-load("INLA.RData")
-param_INLA
-@
+% <<INLA-package-install, include=FALSE, echo=FALSE, results=hide, eval=FALSE>>=
+% #The INLA package is not available on CRAN and needs to installed from another repository if it is not yet available.
+% if(!require("INLA")) install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable")
+% @
+% <<INLA-package, eval=FALSE>>=
+% library("INLA")
+% campyfit_INLA <- inla(ts ~ f(time, model = "rw1", cyclic = FALSE),
+%                 data = data.frame(time = seq(along = campy), ts = campy),
+%                 family = "nbinomial", E = mean(campy),
+%                 control.predictor = list(compute = TRUE, link = 1),
+%                 control.compute = list(cpo = FALSE, config = TRUE),
+%                 control.inla = list(int.strategy = "grid", dz = 1,
+%                                     diff.logdens = 10))
+% posterior <- inla.posterior.sample(1000, campyfit_INLA)
+% rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
+% @
+% <<INLA-package2, include=FALSE, echo=FALSE, results=hide, eval=FALSE>>=
+% mu <- rowMeans(sapply(posterior,
+%                       function(x) exp(unname(x$latent[seq(along=campy), 1]))))
+% campyfitted_INLA <- mu*mean(campy)
+% @
+% <<seatbelts3a, echo=FALSE>>=
+% #param_INLA <- rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
+% #save(campyfitted_INLA, param_INLA, file="INLA.RData")
+% load("INLA.RData")
+% param_INLA
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("INLA")
+R> campyfit_INLA <- inla(ts ~ f(time, model = "rw1", cyclic = FALSE),
++                  data = data.frame(time = seq(along = campy), ts = campy),
++                  family = "nbinomial", E = mean(campy),
++                  control.predictor = list(compute = TRUE, link = 1),
++                  control.compute = list(cpo = FALSE, config = TRUE),
++                  control.inla = list(int.strategy = "grid", dz = 1,
++                                      diff.logdens = 10))
+R> posterior <- inla.posterior.sample(1000, campyfit_INLA)
+R> rowMeans(sapply(posterior, function(x) (unname(x$hyperpar))))
+\end{Sinput}
+\end{Schunk}
+\begin{Schunk}
+\begin{Soutput}
+[1] 329.86  33.79
+\end{Soutput}
+\end{Schunk}
 The estimates for the parameters $\phi$ (the former) and $\kappa_{\beta_0}$ (the latter) in the output above are based on means of a sample of size 1000 from the posterior distribution. Fitted values $\widehat{\lambda}_1,\dots,\widehat{\lambda}_{140}$ are obtained in the same way (not shown in the above code).
 With the Bayesian approach it is very natural to obtain prediction intervals for future observations from the posterior distribution which account for the estimation and observation uncertainties. This is a clear advantage over the classical likelihood-based approach pursued in our package (cf. Section~\ref{sec:prediction}). A disadvantage of the Bayesian approach is its much higher computational effort which could be an obstacle for real-time applications and simultaneous analysis of several time series. The above example runs more than eight seconds on a standard office computer (Intel Xeon CPU with 2.83~GHz); this is seven times longer than \code{tsglm} takes to fit the model.
 An additional difference between our approach and that taken by INLA is the specification of temporal dependence. The comparison of the final fitted values, shown in Figure~\ref{fig:comparison-fit}, illustrates that the model with a time-varying intercept fitted by \code{inla} possess a much smoother line through the observed values when compared to the model fitted by \code{tsglm}.
@@ -1019,44 +1147,65 @@ One possible univariate model for the Campylobacterosis data could be the state 
 \nu_t = \nu_{t-1} + \varepsilon_t.
 \end{align*}
 The initialization $\nu_1$ is specified by assuming $\nu_1 \sim \text{N}(\lambda, \sigma_{\nu}^2)$. The degree of serial dependence is induced by independently distributed innovations $\varepsilon_t$ for which it is assumed that $\varepsilon_t \sim \text{N}(0, \sigma_{\varepsilon}^2)$. This model has unknown parameters $\lambda\in\mathbb{R}$, and $\phi,\sigma_{\nu_1}^2,\sigma_{\varepsilon}^2\in[0,\infty)$ and can be fitted as follows:
-<<KFAS-package>>=
-library("KFAS")
-model <- SSModel(campy ~ SSMcustom(Z = 1, T = 1, R = 1, Q = 0,
-                                   a1 = NA, P1 = NA) - 1, 
-                 distribution = "negative binomial", u = NA)
-updatefn <- function(pars, model, ...){
-  model$a1[1, 1] <- pars[1]
-  model$u[, 1] <- exp(pars[2])
-  model$P1[1, 1] <- exp(pars[3])
-  model$Q[1,1,1] <- exp(pars[4])
-  return(model)
-}
-campyfit_KFAS <- fitSSM(model = model, inits = c(mean(campy), 0, 0, 0),
-                updatefn = updatefn)
-exp(campyfit_KFAS$optim.out$par)
-@
+% <<KFAS-package>>=
+% library("KFAS")
+% model <- SSModel(campy ~ SSMcustom(Z = 1, T = 1, R = 1, Q = 0,
+%                                    a1 = NA, P1 = NA) - 1, 
+%                  distribution = "negative binomial", u = NA)
+% updatefn <- function(pars, model, ...){
+%   model$a1[1, 1] <- pars[1]
+%   model$u[, 1] <- exp(pars[2])
+%   model$P1[1, 1] <- exp(pars[3])
+%   model$Q[1,1,1] <- exp(pars[4])
+%   return(model)
+% }
+% campyfit_KFAS <- fitSSM(model = model, inits = c(mean(campy), 0, 0, 0),
+%                 updatefn = updatefn)
+% exp(campyfit_KFAS$optim.out$par)
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("KFAS")
+R> model <- SSModel(campy ~ SSMcustom(Z = 1, T = 1, R = 1, Q = 0,
++                                     a1 = NA, P1 = NA) - 1, 
++                   distribution = "negative binomial", u = NA)
+R> updatefn <- function(pars, model, ...){
++    model$a1[1, 1] <- pars[1]
++    model$u[, 1] <- exp(pars[2])
++    model$P1[1, 1] <- exp(pars[3])
++    model$Q[1,1,1] <- exp(pars[4])
++    return(model)
++  }
+R> campyfit_KFAS <- fitSSM(model = model, inits = c(mean(campy), 0, 0, 0),
++                  updatefn = updatefn)
+R> exp(campyfit_KFAS$optim.out$par)
+\end{Sinput}
+\begin{Soutput}
+[1] 3.427e+00 9.148e+01 2.775e-16 4.334e-02
+\end{Soutput}
+\end{Schunk}
 %
-<<comparison-acf, fig=TRUE, include=FALSE, echo=FALSE, results=hide, height=3.7, width=6>>=
-par(mar=c(3, 2.3, 0.5, 0.5), mgp=c(1.4, 0.5, 0))
-layout(matrix(1:4, ncol=2))
-acf(campy - fitted(campyfit_tsglm), main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="tsglm", cex=1.3) 
-acf(campy - fitted(campyfit_glarma), main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="glarma", cex=1.3) 
-acf(campy - campyfitted_INLA, main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="INLA", cex=1.3)
-acf(campy - predict(campyfit_KFAS$model), main="", ylim=c(-0.26,1))
-legend("top", bty="n", legend="", title="KFAS", cex=1.3)
-@
-<<comparison-fit, fig=TRUE, include=FALSE, echo=FALSE, results=hide, height=2.8, width=7>>=
-par(mar=c(3, 3, 0.5, 0.5), mgp=c(1.8, 0.6, 0))
-plot(campy, type="p", xlim=c(1996, 2000.6), ylab="Number of cases", main="")
-lines(fitted(campyfit_tsglm), lwd=2, lty="solid")
-lines(as.numeric(time(campy)), fitted(campyfit_glarma), lwd=2, lty="dashed", col="darkorange")
-lines(as.numeric(time(campy)), campyfitted_INLA, lwd=2, lty="longdash", col="blue")
-lines(as.numeric(time(campy)), predict(campyfit_KFAS$model), lwd=2, lty="dotdash", col="red")
-legend("topright", legend=c("tsglm", "glarma", "INLA", "KFAS"), lwd=2, lty=c("solid", "dashed", "longdash", "dotdash"), col=c("black", "darkorange", "blue", "red"), seg.len=5)
-@
+% <<comparison-acf, fig=TRUE, include=FALSE, echo=FALSE, results=hide, height=3.7, width=6>>=
+% par(mar=c(3, 2.3, 0.5, 0.5), mgp=c(1.4, 0.5, 0))
+% layout(matrix(1:4, ncol=2))
+% acf(campy - fitted(campyfit_tsglm), main="", ylim=c(-0.26,1))
+% legend("top", bty="n", legend="", title="tsglm", cex=1.3) 
+% acf(campy - fitted(campyfit_glarma), main="", ylim=c(-0.26,1))
+% legend("top", bty="n", legend="", title="glarma", cex=1.3) 
+% acf(campy - campyfitted_INLA, main="", ylim=c(-0.26,1))
+% legend("top", bty="n", legend="", title="INLA", cex=1.3)
+% acf(campy - predict(campyfit_KFAS$model), main="", ylim=c(-0.26,1))
+% legend("top", bty="n", legend="", title="KFAS", cex=1.3)
+% @
+% <<comparison-fit, fig=TRUE, include=FALSE, echo=FALSE, results=hide, height=2.8, width=7>>=
+% par(mar=c(3, 3, 0.5, 0.5), mgp=c(1.8, 0.6, 0))
+% plot(campy, type="p", xlim=c(1996, 2000.6), ylab="Number of cases", main="")
+% lines(fitted(campyfit_tsglm), lwd=2, lty="solid")
+% lines(as.numeric(time(campy)), fitted(campyfit_glarma), lwd=2, lty="dashed", col="darkorange")
+% lines(as.numeric(time(campy)), campyfitted_INLA, lwd=2, lty="longdash", col="blue")
+% lines(as.numeric(time(campy)), predict(campyfit_KFAS$model), lwd=2, lty="dotdash", col="red")
+% legend("topright", legend=c("tsglm", "glarma", "INLA", "KFAS"), lwd=2, lty=c("solid", "dashed", "longdash", "dotdash"), col=c("black", "darkorange", "blue", "red"), seg.len=5)
+% @
 %
 \begin{figure}[tbp]
 \centering
@@ -1090,18 +1239,39 @@ Furthermore, randomness is introduced through an unobserved error process $\{\va
 As pointed out by \citet{masarotto_gaussian_2012}, copulas with discrete marginals might not be unique \citep[see also][]{genest_primer_2007}.
 Temporal dependence of $\{Y_t\}$ is modeled through the error process $\{\varepsilon_t\}$ by assuming an autoregressive moving average (ARMA) model of order $p$ and $q$. Note that although this model accounts for serial dependence it does not model the conditional distribution of $Y_t$ given the past but only its time-varying marginal distribution. The mean $\lambda_t$ of this marginal distribution is not influenced by the actual (unobserved) value of the error $\varepsilon_t$. Hence this model is not suitable for accurate 1-step-ahead predictions but rather for quantifying the additional uncertainty induced by the serial dependence.
 The following example presents a fit of a Negative Binomial model with an ARMA error process of order $p=1$ and $q=1$:
-<<gcmr-package-pre, include=FALSE, echo=FALSE, results=hide>>=
-width <- getOption("width")
-options(width=50)
-@
-<<gcmr-package, warning=TRUE>>=
-library("gcmr")
-gcmr(ts ~ 1, marginal = negbin.marg(link = "identity"),
-     cormat = arma.cormat(p=1, q=1), data = data.frame(ts = campy))
-@
-<<gcmr-package-post, include=FALSE, echo=FALSE, results=hide>>=
-options(width=width)
-@
+% <<gcmr-package-pre, include=FALSE, echo=FALSE, results=hide>>=
+% width <- getOption("width")
+% options(width=50)
+% @
+% <<gcmr-package, warning=TRUE>>=
+% library("gcmr")
+% gcmr(ts ~ 1, marginal = negbin.marg(link = "identity"),
+%      cormat = arma.cormat(p=1, q=1), data = data.frame(ts = campy))
+% @
+% <<gcmr-package-post, include=FALSE, echo=FALSE, results=hide>>=
+% options(width=width)
+% @
+\begin{Schunk}
+\begin{Sinput}
+R> library("gcmr")
+R> gcmr(ts ~ 1, marginal = negbin.marg(link = "identity"),
++       cormat = arma.cormat(p=1, q=1), data = data.frame(ts = campy))
+\end{Sinput}
+\begin{Soutput}
+Call:
+gcmr(formula = ts ~ 1, data = data.frame(ts = campy), 
+    marginal = negbin.marg(link = "identity"), 
+    cormat = arma.cormat(p = 1, q = 1))
+
+Marginal model parameters:
+(Intercept)   dispersion  
+     11.315        0.255  
+
+Gaussian copula parameters:
+   ar1     ma1  
+ 0.824  -0.270  
+\end{Soutput}
+\end{Schunk}
 The estimated ARMA parameters of the error process indicate that there is a considerable amount of serial correlation in the data. Some of the observed variability is explained by this serial dependence. As discussed above, the fitted values are based solely on the estimated marginal distribution and are therefore constant over time (equal to the estimated intercept in the above output).
 
 %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %  %

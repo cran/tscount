@@ -1,8 +1,8 @@
 Package: tscount
 Type: Package
 Title: Analysis of Count Time Series
-Version: 1.4.2
-Date: 2020-02-29
+Version: 1.4.3
+Date: 2020-09-07
 Authors@R: c(
   person("Tobias", "Liboschik", role=c("aut", "cre"), email="liboschik@statistik.tu-dortmund.de"),
   person("Roland", "Fried", role=c("aut"), email="fried@statistik.tu-dortmund.de"),
@@ -11,15 +11,14 @@ Authors@R: c(
   person("Jonathan", "Rathjens", role=c("ctb"), email="jonathan.rathjens@tu-dortmund.de"))
 Description: Likelihood-based methods for model fitting and assessment, prediction and intervention analysis of count time series following generalized linear models are provided. Models with the identity and with the logarithmic link function are allowed. The conditional distribution can be Poisson or Negative Binomial.
 Imports: parallel, ltsa
-Suggests: Matrix, xtable, gamlss.data, surveillance, gamlss, VGAM, acp,
-        glarma, gamlss.util, KFAS, gcmr
+Suggests: Matrix, xtable, gamlss.data, surveillance
 License: GPL-2 | GPL-3
 URL: http://tscount.r-forge.r-project.org
 ByteCompile: true
 NeedsCompilation: no
 LazyData: true
 Encoding: UTF-8
-Packaged: 2020-02-29 22:42:19 UTC; Tobias
+Packaged: 2020-09-07 20:29:11 UTC; Tobias
 Author: Tobias Liboschik [aut, cre],
   Roland Fried [aut],
   Konstantinos Fokianos [aut],
@@ -27,4 +26,4 @@ Author: Tobias Liboschik [aut, cre],
   Jonathan Rathjens [ctb]
 Maintainer: Tobias Liboschik <liboschik@statistik.tu-dortmund.de>
 Repository: CRAN
-Date/Publication: 2020-03-02 11:30:02 UTC
+Date/Publication: 2020-09-08 07:00:03 UTC
